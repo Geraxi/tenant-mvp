@@ -1,95 +1,251 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Utente } from '../src/types';
-import TenantPreferencesScreen from './TenantPreferencesScreen';
-import LandlordPreferencesScreen from './LandlordPreferencesScreen';
-import PersonalDetailsScreen from './PersonalDetailsScreen';
-import IDVerificationScreen from './IDVerificationScreen';
-import OnboardingConfirmationScreen from './OnboardingConfirmationScreen';
+import NewOnboardingScreen1 from './NewOnboardingScreen1';
+import NewOnboardingScreen2 from './NewOnboardingScreen2';
+import NewOnboardingScreen3 from './NewOnboardingScreen3';
+import NewOnboardingScreen4 from './NewOnboardingScreen4';
+import NewOnboardingScreen5 from './NewOnboardingScreen5';
+import NewOnboardingScreen6 from './NewOnboardingScreen6';
+import NewOnboardingScreen7 from './NewOnboardingScreen7';
+import RoommateSelectionScreen from './RoommateSelectionScreen';
+import RoommatePreferencesScreen1 from './RoommatePreferencesScreen1';
+import RoommatePreferencesScreen2 from './RoommatePreferencesScreen2';
+import RoommatePreferencesSummaryScreen from './RoommatePreferencesSummaryScreen';
 
 interface OnboardingFlowScreenProps {
   user: Utente;
-  onComplete: () => void;
+  onComplete: (onboardingData?: any) => void;
 }
 
 type OnboardingStep = 
-  | 'preferences' 
-  | 'personal-details' 
-  | 'id-verification' 
-  | 'confirmation';
+  | 'step1'
+  | 'step2'
+  | 'step3'
+  | 'step4'
+  | 'step5'
+  | 'step6'
+  | 'step7'
+  | 'roommateSelection'
+  | 'roommatePrefs1'
+  | 'roommatePrefs2'
+  | 'roommateSummary';
+
+const TOTAL_STEPS = 7;
 
 export default function OnboardingFlowScreen({ user, onComplete }: OnboardingFlowScreenProps) {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('preferences');
+  // Initialize role from user's current role, defaulting to 'tenant'
+  const initialRole = user?.ruolo === 'landlord' || user?.userType === 'homeowner' ? 'landlord' : 
+                      user?.ruolo === 'tenant' || user?.userType === 'tenant' ? 'tenant' : 
+                      'tenant';
+  
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('step1');
   const [onboardingData, setOnboardingData] = useState({
-    preferences: {},
-    personalDetails: {},
-    idVerification: {},
+    role: initialRole as 'tenant' | 'landlord' | 'roommate',
+    intention: null as 'house' | 'room' | 'roommate' | null,
+    preferences: {} as any,
+    roommatePreferences: {} as any,
   });
 
-  const handlePreferencesComplete = (preferences: any) => {
+  const handleStep1Next = () => {
+    setCurrentStep('step2');
+  };
+
+  const handleStep2Next = (role: 'tenant' | 'landlord' | 'roommate') => {
+    setOnboardingData(prev => ({ ...prev, role }));
+    setCurrentStep('step3');
+  };
+
+  const handleStep3Next = (intention: 'house' | 'room' | 'roommate') => {
+    setOnboardingData(prev => ({ ...prev, intention }));
+    setCurrentStep('step4');
+  };
+
+  const handleStep4Next = (preferences: any) => {
     setOnboardingData(prev => ({ ...prev, preferences }));
-    setCurrentStep('personal-details');
+    setCurrentStep('step5');
   };
 
-  const handlePersonalDetailsComplete = (personalDetails: any) => {
-    setOnboardingData(prev => ({ ...prev, personalDetails }));
-    setCurrentStep('id-verification');
+  const handleStep5Next = () => {
+    setCurrentStep('step6');
   };
 
-  const handleIDVerificationComplete = (idVerification: any) => {
-    setOnboardingData(prev => ({ ...prev, idVerification }));
-    setCurrentStep('confirmation');
+  const handleStep6Next = () => {
+    setCurrentStep('step7');
   };
 
-  const handleConfirmationComplete = () => {
+  const handleStep7Complete = () => {
+    // After step 7, show roommate selection
+    setCurrentStep('roommateSelection');
+  };
+
+  const handleRoommateSelection = (wantsRoommate: boolean) => {
+    if (wantsRoommate) {
+      setCurrentStep('roommatePrefs1');
+    } else {
+      // Skip roommate preferences and complete onboarding
+      finalizeOnboarding();
+    }
+  };
+
+  const handleRoommatePrefs1Next = (prefs1: any) => {
+    setOnboardingData(prev => ({ 
+      ...prev, 
+      roommatePreferences: { ...prev.roommatePreferences, ...prefs1 } 
+    }));
+    setCurrentStep('roommatePrefs2');
+  };
+
+  const handleRoommatePrefs2Next = (prefs2: any) => {
+    setOnboardingData(prev => ({ 
+      ...prev, 
+      roommatePreferences: { ...prev.roommatePreferences, ...prefs2 } 
+    }));
+    setCurrentStep('roommateSummary');
+  };
+
+  const handleRoommateSummaryComplete = (summary: any) => {
+    setOnboardingData(prev => ({ 
+      ...prev, 
+      roommatePreferences: { ...prev.roommatePreferences, ...summary } 
+    }));
+    finalizeOnboarding();
+  };
+
+  const finalizeOnboarding = () => {
     // Save all onboarding data to Supabase
-    // This would typically involve updating the user profile
-    onComplete();
+    // Pass onboarding data (including role) to parent to handle updates
+    onComplete(onboardingData);
+  };
+
+  const getStepNumber = (step: OnboardingStep): number => {
+    const stepMap: Record<OnboardingStep, number> = {
+      'step1': 1,
+      'step2': 2,
+      'step3': 3,
+      'step4': 4,
+      'step5': 5,
+      'step6': 6,
+      'step7': 7,
+    };
+    return stepMap[step];
   };
 
   const renderCurrentStep = () => {
+    const stepNumber = getStepNumber(currentStep);
+    
     switch (currentStep) {
-      case 'preferences':
+      case 'step1':
         return (
-          user.ruolo === 'tenant' ? (
-            <TenantPreferencesScreen
-              onComplete={handlePreferencesComplete}
-              onSkip={() => setCurrentStep('personal-details')}
-            />
-          ) : (
-            <LandlordPreferencesScreen
-              onComplete={handlePreferencesComplete}
-              onSkip={() => setCurrentStep('personal-details')}
-            />
-          )
-        );
-      
-      case 'personal-details':
-        return (
-          <PersonalDetailsScreen
-            user={user}
-            onComplete={handlePersonalDetailsComplete}
-            onBack={() => setCurrentStep('preferences')}
+          <NewOnboardingScreen1
+            onNext={handleStep1Next}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
           />
         );
       
-      case 'id-verification':
+      case 'step2':
         return (
-          <IDVerificationScreen
-            user={user}
-            onComplete={handleIDVerificationComplete}
-            onBack={() => setCurrentStep('personal-details')}
+          <NewOnboardingScreen2
+            onNext={handleStep2Next}
+            onBack={() => setCurrentStep('step1')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+            initialData={{ role: onboardingData.role }}
           />
         );
       
-      case 'confirmation':
+      case 'step3':
         return (
-          <OnboardingConfirmationScreen
-            user={user}
-            onboardingData={onboardingData}
-            onComplete={handleConfirmationComplete}
-            onBack={() => setCurrentStep('id-verification')}
+          <NewOnboardingScreen3
+            onNext={handleStep3Next}
+            onBack={() => setCurrentStep('step2')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+            initialData={{ intention: onboardingData.intention }}
+          />
+        );
+      
+      case 'step4':
+        return (
+          <NewOnboardingScreen4
+            onNext={handleStep4Next}
+            onBack={() => setCurrentStep('step3')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+            initialData={onboardingData.preferences}
+          />
+        );
+      
+      case 'step5':
+        return (
+          <NewOnboardingScreen5
+            onNext={handleStep5Next}
+            onBack={() => setCurrentStep('step4')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+          />
+        );
+      
+      case 'step6':
+        return (
+          <NewOnboardingScreen6
+            onNext={handleStep6Next}
+            onBack={() => setCurrentStep('step5')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+          />
+        );
+      
+      case 'step7':
+        return (
+          <NewOnboardingScreen7
+            onComplete={handleStep7Complete}
+            onBack={() => setCurrentStep('step6')}
+            step={stepNumber}
+            totalSteps={TOTAL_STEPS}
+          />
+        );
+      
+      case 'roommateSelection':
+        return (
+          <RoommateSelectionScreen
+            onNext={handleRoommateSelection}
+            onBack={() => setCurrentStep('step7')}
+            initialData={{ wantsRoommate: onboardingData.roommatePreferences?.wantsRoommate }}
+          />
+        );
+      
+      case 'roommatePrefs1':
+        return (
+          <RoommatePreferencesScreen1
+            onNext={handleRoommatePrefs1Next}
+            onBack={() => setCurrentStep('roommateSelection')}
+            step={1}
+            totalSteps={3}
+            initialData={onboardingData.roommatePreferences}
+          />
+        );
+      
+      case 'roommatePrefs2':
+        return (
+          <RoommatePreferencesScreen2
+            onNext={handleRoommatePrefs2Next}
+            onBack={() => setCurrentStep('roommatePrefs1')}
+            step={2}
+            totalSteps={3}
+            initialData={onboardingData.roommatePreferences}
+          />
+        );
+      
+      case 'roommateSummary':
+        return (
+          <RoommatePreferencesSummaryScreen
+            onComplete={handleRoommateSummaryComplete}
+            onBack={() => setCurrentStep('roommatePrefs2')}
+            step={3}
+            totalSteps={3}
+            preferences={onboardingData.roommatePreferences}
           />
         );
       
@@ -99,93 +255,11 @@ export default function OnboardingFlowScreen({ user, onComplete }: OnboardingFlo
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {user.ruolo === 'tenant' ? 'Configura il tuo profilo' : 'Configura il tuo profilo'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {user.ruolo === 'tenant' 
-            ? 'Aiutaci a trovare la casa perfetta per te'
-            : 'Aiutaci a trovare gli inquilini ideali'
-          }
-        </Text>
-      </View>
-
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { width: `${((getStepNumber(currentStep) + 1) / 4) * 100}%` }
-            ]} 
-          />
-        </View>
-        <Text style={styles.progressText}>
-          Passo {getStepNumber(currentStep) + 1} di 4
-        </Text>
-      </View>
-
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       {renderCurrentStep()}
     </SafeAreaView>
   );
 }
-
-const getStepNumber = (step: OnboardingStep): number => {
-  switch (step) {
-    case 'preferences': return 0;
-    case 'personal-details': return 1;
-    case 'id-verification': return 2;
-    case 'confirmation': return 3;
-    default: return 0;
-  }
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    lineHeight: 22,
-  },
-  progressContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2196F3',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-});
 
 
 

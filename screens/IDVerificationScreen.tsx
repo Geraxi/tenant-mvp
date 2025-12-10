@@ -13,6 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Utente } from '../src/types';
+import { VerificationService } from '../src/services/verificationService';
 
 interface IDVerificationScreenProps {
   user: Utente;
@@ -117,7 +118,12 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    if (!user) {
+      Alert.alert('Errore', 'Utente non trovato');
+      return;
+    }
+
     if (!idVerification.documentType) {
       Alert.alert('Attenzione', 'Seleziona il tipo di documento');
       return;
@@ -130,7 +136,34 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
       Alert.alert('Attenzione', 'Carica una foto selfie per la verifica');
       return;
     }
-    onComplete(idVerification);
+
+    setUploading('submitting');
+    try {
+      const result = await VerificationService.submitVerification(
+        user.id,
+        idVerification.documentType as 'carta-identita' | 'passaporto' | 'patente',
+        idVerification.documentFront,
+        idVerification.documentBack || null,
+        idVerification.selfie,
+        idVerification.documentNumber || undefined,
+        idVerification.expiryDate || undefined
+      );
+
+      if (result.success) {
+        Alert.alert(
+          'Successo',
+          'Documenti inviati con successo! La verifica è in corso e riceverai una notifica quando sarà completata.',
+          [{ text: 'OK', onPress: () => onComplete(idVerification) }]
+        );
+      } else {
+        Alert.alert('Errore', result.error || 'Impossibile inviare i documenti');
+        setUploading(null);
+      }
+    } catch (error: any) {
+      console.error('Error submitting verification:', error);
+      Alert.alert('Errore', error.message || 'Impossibile inviare i documenti');
+      setUploading(null);
+    }
   };
 
   const renderImageUpload = (type: 'documentFront' | 'documentBack' | 'selfie', label: string) => {

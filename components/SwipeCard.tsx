@@ -105,14 +105,39 @@ export default function SwipeCard({ item, isPropertyView, propertyOwner, onSwipe
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => {
-        // Always capture touch events for the first card
-        return isFirst;
+      onStartShouldSetPanResponder: (evt) => {
+        // Don't capture initially - let buttons handle their touches
+        // We'll capture on move if it's a swipe
+        if (!isFirst) return false;
+        
+        // Check if touch is in the bottom area where buttons are (bottom 20% of screen)
+        const { pageY } = evt.nativeEvent;
+        const screenHeight = height;
+        const buttonAreaStart = screenHeight * 0.8; // Bottom 20% of screen
+        
+        // Don't capture if touch is in button area
+        if (pageY > buttonAreaStart) {
+          return false;
+        }
+        
+        return false; // Always return false initially, let onMoveShouldSetPanResponder handle it
       },
-      onMoveShouldSetPanResponder: (_, gesture) => {
-        // More sensitive to horizontal swipes, less sensitive to vertical
-        // Always allow movement for the first card
-        return isFirst && (Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 15);
+      onMoveShouldSetPanResponder: (evt, gesture) => {
+        // Only capture if it's a clear swipe gesture (not a tap)
+        if (!isFirst) return false;
+        
+        // Check if touch started in button area
+        const { pageY } = evt.nativeEvent;
+        const screenHeight = height;
+        const buttonAreaStart = screenHeight * 0.8; // Bottom 20% of screen
+        
+        // Don't capture if touch is in button area
+        if (pageY > buttonAreaStart) {
+          return false;
+        }
+        
+        // Require significant movement to distinguish from button taps
+        return Math.abs(gesture.dx) > 15 || Math.abs(gesture.dy) > 20;
       },
       onPanResponderGrant: () => {
         logger.debug('onPanResponderGrant called');
@@ -126,6 +151,22 @@ export default function SwipeCard({ item, isPropertyView, propertyOwner, onSwipe
       }),
       onPanResponderRelease: (_, gesture) => {
         const { dx, dy, vx } = gesture;
+        // Only trigger swipe if there was significant movement
+        // This prevents accidental swipes when trying to tap buttons
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+          // Small movement, likely a tap - don't swipe
+          Animated.spring(pan, {
+            toValue: { x: 0, y: 0 },
+            tension: 120,
+            friction: 8,
+            useNativeDriver: true,
+          }).start(() => {
+            pan.setValue({ x: 0, y: 0 });
+            pan.setOffset({ x: 0, y: 0 });
+          });
+          return;
+        }
+        
         const isSwipeRight = dx > SWIPE_THRESHOLD || (dx > 0 && vx > 0.5);
         const isSwipeLeft = dx < -SWIPE_THRESHOLD || (dx < 0 && vx < -0.5);
         
@@ -337,6 +378,7 @@ export default function SwipeCard({ item, isPropertyView, propertyOwner, onSwipe
             style={styles.tapHint}
             onPress={handleCardPress}
             activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <MaterialIcons name="touch-app" size={24} color="#fff" />
             <Text style={styles.tapHintText}>Tocca per vedere di più</Text>
@@ -363,7 +405,11 @@ export default function SwipeCard({ item, isPropertyView, propertyOwner, onSwipe
             <Text style={[styles.labelText, { color: '#F44336' }]}>NOPE</Text>
           </Animated.View>
 
-        <View style={styles.infoContainer}>
+        <TouchableOpacity 
+          style={styles.infoContainer}
+          onPress={handleCardPress}
+          activeOpacity={0.95}
+        >
           {isPropertyView ? (
             // Property view
             <>
@@ -450,7 +496,7 @@ export default function SwipeCard({ item, isPropertyView, propertyOwner, onSwipe
               )}
             </>
           )}
-        </View>
+        </TouchableOpacity>
       </Animated.View>
 
       <ExpandableCardModal
@@ -470,7 +516,7 @@ const styles = StyleSheet.create({
   card: {
     position: 'absolute',
     width: width - 40,
-    height: height * 0.65, // Reduced height to prevent overlap
+    height: height * 0.58, // Fixed height that leaves room for buttons
     borderRadius: 20,
     backgroundColor: '#fff',
     shadowColor: '#000',
@@ -480,12 +526,13 @@ const styles = StyleSheet.create({
     elevation: 5,
     overflow: 'hidden',
     alignSelf: 'center',
+    zIndex: 1, // Lower than buttons
   },
   nextCard: {
     transform: [{ scale: 0.95 }, { translateY: 10 }],
     opacity: 1,
     zIndex: -1,
-    height: height * 0.65, // Reduced height to match main card
+    height: height * 0.58, // Fixed height to match main card
     width: width - 40,
     borderRadius: 20,
     alignSelf: 'center',
@@ -502,7 +549,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: height * 0.65 * 0.6, // 60% of card height
+    height: height * 0.58 * 0.55, // 55% of card height (adjusted for new card height)
     overflow: 'hidden',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -514,18 +561,20 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    bottom: 12,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
-    zIndex: 5,
+    zIndex: 10,
+    maxWidth: '100%',
+    elevation: 10,
   },
   tapHintText: {
     color: '#fff',
@@ -537,12 +586,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: height * 0.65 * 0.4, // 40% of card height
-    padding: 24,
+    minHeight: height * 0.58 * 0.45, // 45% of card height (adjusted for new card height)
+    paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    justifyContent: 'flex-start',
+    overflow: 'visible',
   },
   nameRow: {
     flexDirection: 'row',
@@ -550,42 +602,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
     minHeight: 32,
+    gap: 12,
   },
   name: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
-    marginRight: 8,
+    flexShrink: 1,
+    marginRight: 0,
   },
   typeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: 6,
+    height: 20,
   },
   userType: {
     fontSize: 14,
     color: '#666',
     fontWeight: '500',
+    lineHeight: 20,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginBottom: 8,
+    height: 20,
   },
   location: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
+    flex: 1,
   },
   bio: {
     fontSize: 14,
     color: '#666',
     lineHeight: 18,
-    marginBottom: 8,
-    // Ensure consistent bio height
-    height: 54, // Fixed height for 3 lines (18 * 3)
+    marginBottom: 6,
+    // Ensure consistent bio height - reduced to make room for property details
+    height: 48, // Fixed height for ~2.5 lines (18 * 2.5)
     overflow: 'hidden',
   },
   rentRow: {
@@ -642,8 +701,9 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     alignItems: 'flex-end',
-    minWidth: 100,
-    paddingLeft: 8,
+    minWidth: 80,
+    maxWidth: 100,
+    paddingLeft: 0,
     flexShrink: 0,
   },
   price: {
@@ -651,27 +711,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2196F3',
     flexShrink: 0,
+    lineHeight: 24,
   },
   priceUnit: {
     fontSize: 12,
     color: '#666',
     marginTop: -2,
     flexShrink: 0,
+    lineHeight: 14,
   },
   propertyDetails: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: 16,
+    marginTop: 6,
+    marginBottom: 0,
+    height: 24,
+    alignItems: 'center',
   },
   propertyDetail: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    height: 24,
   },
   propertyDetailText: {
     fontSize: 12,
     color: '#2196F3',
     fontWeight: '500',
+    lineHeight: 24,
   },
   ownerRow: {
     flexDirection: 'row',

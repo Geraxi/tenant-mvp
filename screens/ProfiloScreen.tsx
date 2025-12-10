@@ -27,7 +27,6 @@ const { width } = Dimensions.get('window');
 interface ProfiloScreenProps {
   onNavigateToEditProfile: () => void;
   onNavigateToVerification: () => void;
-  onNavigateToDocuments: () => void;
   onNavigateToSettings: () => void;
   onLogout: () => void;
   onBack: () => void;
@@ -37,13 +36,12 @@ interface ProfiloScreenProps {
 export default function ProfiloScreen({
   onNavigateToEditProfile,
   onNavigateToVerification,
-  onNavigateToDocuments,
   onNavigateToSettings,
   onLogout,
   onBack,
   onRoleSwitch,
 }: ProfiloScreenProps) {
-  const { user, updateProfile, uploadProfilePhoto, signOut, switchRole } = useSupabaseAuth();
+  const { user, updateProfile, uploadProfilePhoto, signOut, switchRole, deleteAccount } = useSupabaseAuth();
   const [loading, setLoading] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -94,6 +92,53 @@ export default function ProfiloScreen({
             await signOut();
             onLogout();
           }
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Elimina Account',
+      'Sei sicuro di voler eliminare il tuo account? Questa azione non può essere annullata e tutti i tuoi dati verranno rimossi permanentemente.',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Conferma Finale',
+              'Questa è l\'ultima conferma. Il tuo account e tutti i dati associati verranno eliminati permanentemente. Vuoi continuare?',
+              [
+                { text: 'Annulla', style: 'cancel' },
+                {
+                  text: 'Elimina Definitivamente',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setLoading(true);
+                      const result = await deleteAccount();
+                      if (result.success) {
+                        Alert.alert(
+                          'Account Eliminato',
+                          'Il tuo account è stato eliminato con successo.',
+                          [{ text: 'OK', onPress: () => onLogout() }]
+                        );
+                      } else {
+                        Alert.alert('Errore', result.error || 'Impossibile eliminare l\'account. Riprova più tardi.');
+                      }
+                    } catch (error) {
+                      console.error('Error deleting account:', error);
+                      Alert.alert('Errore', 'Impossibile eliminare l\'account. Riprova più tardi.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
         },
       ]
     );
@@ -375,18 +420,6 @@ export default function ProfiloScreen({
               </TouchableOpacity>
             </ScaleIn>
 
-            <ScaleIn delay={2200}>
-              <TouchableOpacity style={styles.actionButton} onPress={onNavigateToDocuments}>
-                <View style={styles.actionIcon}>
-                  <MaterialIcons name="folder" size={24} color="#4CAF50" />
-                </View>
-                <View style={styles.actionContent}>
-                  <Text style={styles.actionTitle}>I Miei Documenti</Text>
-                  <Text style={styles.actionSubtitle}>Gestisci contratti e ricevute</Text>
-                </View>
-                <MaterialIcons name="arrow-forward-ios" size={16} color="#666" />
-              </TouchableOpacity>
-            </ScaleIn>
           </View>
         </FadeIn>
 
@@ -450,7 +483,7 @@ export default function ProfiloScreen({
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loading}>
           <LinearGradient
             colors={['#F44336', '#D32F2F']}
             style={styles.logoutButtonGradient}
@@ -458,6 +491,14 @@ export default function ProfiloScreen({
             <MaterialIcons name="logout" size={20} color="#fff" />
             <Text style={styles.logoutButtonText}>Esci</Text>
           </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Delete Account Button */}
+        <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount} disabled={loading}>
+          <View style={styles.deleteAccountButtonContent}>
+            <MaterialIcons name="delete-forever" size={20} color="#F44336" />
+            <Text style={styles.deleteAccountButtonText}>Elimina Account</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
 
@@ -694,6 +735,32 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  deleteAccountButton: {
+    margin: 20,
+    marginTop: 10,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#F44336',
+    shadowColor: '#F44336',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deleteAccountButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  deleteAccountButtonText: {
+    color: '#F44336',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,

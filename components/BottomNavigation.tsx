@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { logger } from '../src/utils/logger';
 
-type NavScreen = 'home' | 'discover' | 'matches' | 'bollette' | 'immobili' | 'profilo' | 'messages';
+type NavScreen = 'discover' | 'matches' | 'messages' | 'profilo';
 
 interface BottomNavigationProps {
   currentScreen: NavScreen;
@@ -21,38 +21,12 @@ export default function BottomNavigation({
 }: BottomNavigationProps) {
   logger.debug('🔵 BottomNavigation - Rendering with:', { currentScreen, showContracts, userRole });
   logger.debug('🔵 BottomNavigation - Component is being rendered!');
-  const navItems: { screen: NavScreen; icon: string; label: string }[] = userRole === 'landlord' 
-    ? [
-        { screen: 'home', icon: 'home', label: 'Home' },
-        { screen: 'discover', icon: 'search', label: 'Browse' },
-        { screen: 'matches', icon: 'favorite', label: 'Matches' },
-        { screen: 'messages', icon: 'message', label: 'Messages' },
-        { screen: 'profilo', icon: 'person', label: 'Profile' },
-      ]
-    : [
-        { screen: 'home', icon: 'home', label: 'Home' },
-        { 
-          screen: 'discover', 
-          icon: 'search', 
-          label: 'Scopri' 
-        },
-        { 
-          screen: 'matches', 
-          icon: 'favorite', 
-          label: 'Match' 
-        },
-        { 
-          screen: 'messages', 
-          icon: 'message', 
-          label: 'Messaggi' 
-        },
-        { 
-          screen: 'bollette', 
-          icon: 'receipt', 
-          label: 'Bollette' 
-        },
-        { screen: 'profilo', icon: 'person', label: 'Profilo' },
-      ];
+  const navItems: { screen: NavScreen; icon: string; label: string }[] = [
+    { screen: 'discover', icon: 'search', label: userRole === 'landlord' ? 'Browse' : 'Scopri' },
+    { screen: 'matches', icon: 'favorite', label: userRole === 'landlord' ? 'Matches' : 'Match' },
+    { screen: 'messages', icon: 'message', label: userRole === 'landlord' ? 'Messages' : 'Messaggi' },
+    { screen: 'profilo', icon: 'person', label: userRole === 'landlord' ? 'Profile' : 'Profilo' },
+  ];
 
   return (
     <View style={styles.container}>

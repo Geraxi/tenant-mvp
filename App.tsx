@@ -20,25 +20,19 @@ import { StripeProvider } from './stripe-provider';
 import LoginScreen from './screens/LoginScreen';
 import OnboardingFlowScreen from './screens/OnboardingFlowScreen';
 import RoleSwitchOnboardingScreen from './screens/RoleSwitchOnboardingScreen';
-import HomeScreen from './screens/HomeScreen';
-import LandlordHomeScreen from './screens/LandlordHomeScreen';
 import PropertySwipeScreen from './screens/PropertySwipeScreen';
 
 // Test if PropertySwipeScreen is imported correctly
 console.log('🔍 App.tsx - PropertySwipeScreen imported:', typeof PropertySwipeScreen);
 import LandlordSwipeScreen from './screens/LandlordSwipeScreen';
-import MatchesScreen from './screens/MatchesScreen';
+import MatchesScreen, { MatchWithDetails } from './screens/MatchesScreen';
+import MatchDetailScreen from './screens/MatchDetailScreen';
 import MessagesScreen from './screens/MessagesScreen';
-import LeMieBolletteScreen from './screens/LeMieBolletteScreen';
-import PagamentoScreen from './screens/PagamentoScreen';
-import GestioneImmobiliScreen from './screens/GestioneImmobiliScreen';
-import DocumentiScreen from './screens/DocumentiScreen';
 import ProfiloScreen from './screens/ProfiloScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
 import HelpCenterScreen from './screens/HelpCenterScreen';
 import HomeownerOnboardingScreen from './screens/HomeownerOnboardingScreen';
-import ContractSignatureScreen from './screens/ContractSignatureScreen';
 import PreferencesScreen from './screens/PreferencesScreen';
 import FiltersScreen from './screens/FiltersScreen';
 import BottomNavigation from './components/BottomNavigation';
@@ -49,33 +43,23 @@ type Screen =
   | 'login'
   | 'onboarding'
   | 'homeownerOnboarding'
-  | 'home'
   | 'discover'
   | 'matches'
-  | 'bollette'
-  | 'pagamento'
-  | 'immobili'
-  | 'documenti'
+  | 'matchDetail'
+  | 'messages'
   | 'profilo'
   | 'settings'
   | 'editProfile'
   | 'help'
   | 'preferences'
-  | 'filters'
-  | 'contractSignature';
+  | 'filters';
 
-type NavScreen = 'home' | 'discover' | 'matches' | 'bollette' | 'immobili' | 'profilo';
+type NavScreen = 'discover' | 'matches' | 'messages' | 'profilo';
 
-interface PaymentData {
-  billId: string;
-  importo: number;
-  categoria: string;
-}
 
 export default function App() {
   const { user, loading: authLoading, signIn, signUp, signOut, switchRole, completeOnboarding } = useSupabaseAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -101,6 +85,9 @@ export default function App() {
   const [appRefreshKey, setAppRefreshKey] = useState(0);
   const [roleSwitchLoading, setRoleSwitchLoading] = useState(false);
   const [switchingToRole, setSwitchingToRole] = useState<'tenant' | 'landlord' | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<MatchWithDetails | null>(null);
+  const [messageTargetUserId, setMessageTargetUserId] = useState<string | null>(null);
+  const [messageTargetUserName, setMessageTargetUserName] = useState<string | null>(null);
   
   // NEW: Centralized role state management - derive from user directly
   const currentRole = user ? (
@@ -143,7 +130,7 @@ export default function App() {
         if (!hasCompleted) {
           setCurrentScreen('onboarding');
         } else {
-          setCurrentScreen('home');
+          setCurrentScreen('discover');
         }
       } else {
         // No user, show login
@@ -166,6 +153,45 @@ export default function App() {
     }
   }, [user, authLoading]);
 
+  // Handle navigation to onboarding after signup when user becomes available
+  const [pendingOnboardingNavigation, setPendingOnboardingNavigation] = useState(false);
+  
+  useEffect(() => {
+    if (pendingOnboardingNavigation && user) {
+      console.log('User available after signup, navigating to onboarding');
+      setPendingOnboardingNavigation(false);
+      setCurrentScreen('onboarding');
+    }
+  }, [pendingOnboardingNavigation, user]);
+
+  // Fallback: if we're waiting for user after signup but it takes too long, navigate anyway
+  useEffect(() => {
+    if (pendingOnboardingNavigation) {
+      const timeout = setTimeout(() => {
+        console.log('Timeout waiting for user after signup, navigating to onboarding anyway');
+        setPendingOnboardingNavigation(false);
+        setCurrentScreen('onboarding');
+      }, 2000); // 2 second timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [pendingOnboardingNavigation]);
+
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    if (isLoading && !authLoading) {
+      const timeout = setTimeout(() => {
+        console.log('Loading timeout - forcing initialization');
+        setIsLoading(false);
+        setIsInitialized(true);
+        if (!user) {
+          setCurrentScreen('login');
+        }
+      }, 5000); // 5 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading, authLoading, user]);
+
   const handleLogin = async (email: string, password: string) => {
     try {
       const result = await signIn(email, password);
@@ -175,7 +201,7 @@ export default function App() {
         const hasCompleted = onboardingCompleted === 'true';
         
         if (hasCompleted) {
-          setCurrentScreen('home');
+          setCurrentScreen('discover');
         } else {
           setCurrentScreen('onboarding');
         }
@@ -209,7 +235,6 @@ export default function App() {
       
       // Clear all local state
       setHasCompletedOnboarding(false);
-      setPaymentData(null);
       setCurrentScreen('login');
       
       console.log('Logout completed successfully');
@@ -234,8 +259,8 @@ export default function App() {
         setRefreshKey(prev => prev + 1);
         setAppRefreshKey(prev => prev + 1);
         
-        // Navigate to home to see the changes
-        setCurrentScreen('home');
+        // Navigate to discover to see the changes
+        setCurrentScreen('discover');
         
       } else {
         console.error('❌ Role switch failed:', result.error);
@@ -262,7 +287,7 @@ export default function App() {
       const result = await completeOnboarding('landlord');
       if (result.success) {
         setShowHomeownerOnboarding(false);
-        setCurrentScreen('home');
+        setCurrentScreen('discover');
         // TODO: Save preferences, filters, and create first listing
         console.log('Homeowner onboarding completed with:', { preferences, filters, firstListing });
       }
@@ -279,17 +304,7 @@ export default function App() {
     console.log('🚀 User object:', user);
     console.log('🚀 handleNavigation - About to set currentScreen to:', screen);
     
-    // Prevent tenants from accessing landlord-only screens
-    const userRole = user?.userType || user?.ruolo;
-    if (screen === 'immobili' && userRole !== 'landlord' && userRole !== 'homeowner') {
-      console.log('🚫 Tenant attempted to access Immobili screen - blocked');
-      return;
-    }
-    
     switch (screen) {
-      case 'home':
-        setCurrentScreen('home');
-        break;
       case 'discover':
         console.log('🔄 NAVIGATING TO DISCOVER SCREEN');
         console.log('🔄 Current role:', currentRole);
@@ -312,48 +327,33 @@ export default function App() {
       case 'messages':
         setCurrentScreen('messages');
         break;
-      case 'bollette':
-        setCurrentScreen('bollette');
-        break;
-      case 'immobili':
-        setCurrentScreen('immobili');
-        break;
       case 'profilo':
         setCurrentScreen('profilo');
-        break;
-      case 'filters':
-        setCurrentScreen('filters');
         break;
     }
   };
 
   const getCurrentNavScreen = (): NavScreen => {
     switch (currentScreen) {
-      case 'home':
-        return 'home';
       case 'discover':
         return 'discover';
       case 'matches':
         return 'matches';
       case 'messages':
         return 'messages';
-      case 'bollette':
-      case 'pagamento':
-        return 'bollette';
-      case 'immobili':
-        return 'immobili';
       case 'profilo':
-      case 'documenti':
+      case 'settings':
+      case 'editProfile':
         return 'profilo';
       default:
-        return 'home';
+        return 'discover';
     }
   };
 
-  const showBottomNav = user && !['login', 'settings', 'editProfile', 'help', 'preferences', 'filters'].includes(currentScreen);
+  const showBottomNav = user && !['login', 'onboarding', 'homeownerOnboarding', 'settings', 'editProfile', 'help', 'preferences', 'filters'].includes(currentScreen);
   
-  // Additional check for home screen
-  const shouldShowNavbar = showBottomNav || (currentScreen === 'home' && user) || forceNavbar;
+  // Show navbar for main navigation screens (but not during onboarding)
+  const shouldShowNavbar = showBottomNav || (forceNavbar && currentScreen !== 'onboarding' && currentScreen !== 'homeownerOnboarding');
   console.log('App - Should show navbar:', shouldShowNavbar);
   
   // Simplified user state monitoring (no more complex refresh logic)
@@ -421,78 +421,92 @@ export default function App() {
               setTimeout(() => {
                 if (hasCompleted) {
                   console.log('Onboarding completed, navigating to home');
-                  setCurrentScreen('home');
+                  setCurrentScreen('discover');
                 } else {
                   console.log('Onboarding not completed, navigating to onboarding');
                   setCurrentScreen('onboarding');
                 }
               }, 100);
+            }}
+            onSignupSuccess={async () => {
+              console.log('Signup success - will navigate to onboarding when user is available');
+              setForceNavbar(true);
+              // Set flag to navigate to onboarding once user state is available
+              setPendingOnboardingNavigation(true);
+              // Also try to navigate immediately - if user is already available, this will work
+              // Otherwise, the useEffect above will handle it when user becomes available
+              if (user) {
+                setPendingOnboardingNavigation(false);
+                setCurrentScreen('onboarding');
+              }
             }}
             onNavigateToSignup={() => Alert.alert('Info', 'Registrazione sarà disponibile presto')}
           />
         );
 
       case 'onboarding':
-        return user ? (
-          roleSwitchTarget ? (
-            <RoleSwitchOnboardingScreen
-              user={user}
-              targetRole={roleSwitchTarget}
-              onComplete={async () => {
-                try {
-                  // Mark role-specific onboarding as completed
-                  await AsyncStorage.setItem(`${roleSwitchTarget}_onboarding_completed`, 'true');
-                  setRoleSwitchTarget(null);
-                  setCurrentScreen('discover');
-                } catch (error) {
-                  console.error('Error saving role switch onboarding completion:', error);
-                  setRoleSwitchTarget(null);
-                  setCurrentScreen('discover');
-                }
-              }}
-              onSkip={() => {
+        if (!user) {
+          // User not available yet, show loading
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
+              <ActivityIndicator size="large" color="#2196F3" />
+              <Text style={{ marginTop: 16, color: '#666' }}>Caricamento...</Text>
+            </View>
+          );
+        }
+        return roleSwitchTarget ? (
+          <RoleSwitchOnboardingScreen
+            user={user}
+            targetRole={roleSwitchTarget}
+            onComplete={async () => {
+              try {
+                // Mark role-specific onboarding as completed
+                await AsyncStorage.setItem(`${roleSwitchTarget}_onboarding_completed`, 'true');
                 setRoleSwitchTarget(null);
                 setCurrentScreen('discover');
-              }}
-            />
-          ) : (
-            <OnboardingFlowScreen
-              user={user}
-              onComplete={async () => {
-                try {
-                  // Save onboarding completion to AsyncStorage
-                  await AsyncStorage.setItem('onboarding_completed', 'true');
-                  setHasCompletedOnboarding(true);
-                  setCurrentScreen('home');
-                } catch (error) {
-                  console.error('Error saving onboarding completion:', error);
-                  setHasCompletedOnboarding(true);
-                  setCurrentScreen('home');
-                }
-              }}
-            />
-          )
-        ) : (
-          <LoginScreen
-            onLoginSuccess={async () => {
-              console.log('Login success - checking onboarding status');
-              setForceNavbar(true);
-              // Check if user has completed onboarding
-              const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
-              const hasCompleted = onboardingCompleted === 'true';
-              
-              // Small delay to ensure user state is set
-              setTimeout(() => {
-                if (hasCompleted) {
-                  console.log('Onboarding completed, navigating to home');
-                  setCurrentScreen('home');
-                } else {
-                  console.log('Onboarding not completed, navigating to onboarding');
-                  setCurrentScreen('onboarding');
-                }
-              }, 100);
+              } catch (error) {
+                console.error('Error saving role switch onboarding completion:', error);
+                setRoleSwitchTarget(null);
+                setCurrentScreen('discover');
+              }
             }}
-            onNavigateToSignup={() => Alert.alert('Info', 'Registrazione sarà disponibile presto')}
+            onSkip={() => {
+              setRoleSwitchTarget(null);
+              setCurrentScreen('discover');
+            }}
+          />
+        ) : (
+          <OnboardingFlowScreen
+            user={user}
+            onComplete={async (onboardingData) => {
+              try {
+                // Update user role if it was selected during onboarding and differs from current role
+                if (onboardingData?.role && onboardingData.role !== 'roommate' && user) {
+                  const roleToSet = onboardingData.role === 'landlord' ? 'landlord' : 'tenant';
+                  const currentUserRole = user.userType === 'homeowner' || user.ruolo === 'homeowner' ? 'landlord' : (user.userType || user.ruolo);
+                  
+                  console.log('Onboarding completion - Selected role:', roleToSet);
+                  console.log('Onboarding completion - Current user role:', currentUserRole);
+                  
+                  // Only update if the role is different
+                  if (roleToSet !== currentUserRole) {
+                    console.log('Updating user role from onboarding:', roleToSet);
+                    await switchRole(roleToSet);
+                    // Wait a bit for the role to update
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                  }
+                }
+                
+                // Save onboarding completion to AsyncStorage
+                await AsyncStorage.setItem('onboarding_completed', 'true');
+                setHasCompletedOnboarding(true);
+                setCurrentScreen('discover');
+              } catch (error) {
+                console.error('Error saving onboarding completion:', error);
+                setHasCompletedOnboarding(true);
+                setCurrentScreen('discover');
+              }
+            }}
           />
         );
 
@@ -503,51 +517,11 @@ export default function App() {
             onComplete={handleHomeownerOnboardingComplete}
             onBack={() => {
               setShowHomeownerOnboarding(false);
-              setCurrentScreen('home');
+              setCurrentScreen('discover');
             }}
           />
         ) : null;
 
-      case 'home':
-        // Use LandlordHomeScreen for landlords, HomeScreen for tenants
-        if (currentRole === 'landlord' || currentRole === 'homeowner') {
-          return (
-            <View style={{ flex: 1 }}>
-              <LandlordHomeScreen
-                onNavigateToBills={() => setCurrentScreen('bollette')}
-                onNavigateToPayments={() => setCurrentScreen('bollette')}
-                onNavigateToProfile={() => setCurrentScreen('profilo')}
-                onNavigateToNotifications={() => {
-                  // TODO: Implement notifications screen
-                  Alert.alert('Info', 'Schermata notifiche in arrivo');
-                }}
-                onNavigateToHelp={() => setCurrentScreen('help')}
-                onNavigateToContracts={() => setCurrentScreen('documenti')}
-                onNavigateToContractSignature={() => setCurrentScreen('contractSignature')}
-                onNavigateToProperties={() => setCurrentScreen('properties')}
-                onNavigateToTenants={() => setCurrentScreen('tenants')}
-                onNavigateToIncome={() => setCurrentScreen('income')}
-              />
-            </View>
-          );
-        } else {
-          return (
-            <View style={{ flex: 1 }}>
-              <HomeScreen
-                onNavigateToBills={() => setCurrentScreen('bollette')}
-                onNavigateToPayments={() => setCurrentScreen('bollette')}
-                onNavigateToProfile={() => setCurrentScreen('profilo')}
-                onNavigateToNotifications={() => {
-                  // TODO: Implement notifications screen
-                  Alert.alert('Info', 'Schermata notifiche in arrivo');
-                }}
-                onNavigateToHelp={() => setCurrentScreen('help')}
-                onNavigateToContracts={() => setCurrentScreen('documenti')}
-                onNavigateToContractSignature={() => setCurrentScreen('contractSignature')}
-              />
-            </View>
-          );
-        }
 
       case 'discover':
         console.log('🔍 DISCOVER CASE - About to render discover screen');
@@ -569,13 +543,19 @@ export default function App() {
 
         // Show appropriate content based on centralized role
         console.log('🔍 DISCOVER CASE - Using currentRole:', currentRole);
+        console.log('🔍 DISCOVER CASE - User ruolo:', user.ruolo);
+        console.log('🔍 DISCOVER CASE - User userType:', user.userType);
         
-        if (currentRole === 'tenant') {
+        // Ensure role is set - if not, default to tenant
+        const effectiveRole = currentRole || 'tenant';
+        console.log('🔍 DISCOVER CASE - Effective role:', effectiveRole);
+        
+        if (effectiveRole === 'tenant') {
           console.log('🔍 DISCOVER CASE - Rendering PropertySwipeScreen for tenant');
           
           return (
             <PropertySwipeScreen
-              key={`property-swipe-${currentRole}-${user?.id}-${refreshKey}`}
+              key={`property-swipe-${effectiveRole}-${user?.id}-${refreshKey}`}
               onNavigateToMatches={() => setCurrentScreen('matches')}
               onNavigateToProfile={() => setCurrentScreen('profilo')}
               onNavigateToDiscover={() => setCurrentScreen('discover')}
@@ -583,7 +563,7 @@ export default function App() {
               onRoleSwitch={handleRoleSwitch}
             />
           );
-        } else if (currentRole === 'landlord') {
+        } else if (effectiveRole === 'landlord') {
           console.log('🔍 DISCOVER CASE - Rendering LandlordSwipeScreen for landlord');
           
           return (
@@ -635,75 +615,51 @@ export default function App() {
         return (
           <MatchesScreen
             onNavigateBack={() => setCurrentScreen('discover')}
+            onNavigateToDetail={(match) => {
+              setSelectedMatch(match);
+              setCurrentScreen('matchDetail');
+            }}
+            onNavigateToMessages={(userId, userName) => {
+              setMessageTargetUserId(userId);
+              setMessageTargetUserName(userName);
+              setCurrentScreen('messages');
+            }}
+          />
+        );
+
+      case 'matchDetail':
+        if (!selectedMatch || !user) {
+          return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="#2196F3" />
+            </View>
+          );
+        }
+        const currentUserRole = user.userType === 'homeowner' || user.ruolo === 'homeowner' ? 'landlord' : (user.userType || user.ruolo || 'tenant');
+        return (
+          <MatchDetailScreen
+            match={selectedMatch}
+            currentUserId={user.id}
+            currentUserRole={currentUserRole as 'tenant' | 'landlord'}
+            onBack={() => setCurrentScreen('matches')}
+            onContact={(otherUserId, otherUserName) => {
+              setMessageTargetUserId(otherUserId);
+              setMessageTargetUserName(otherUserName);
+              setCurrentScreen('messages');
+            }}
           />
         );
 
       case 'messages':
         return (
           <MessagesScreen
-            onNavigateBack={() => setCurrentScreen('home')}
-          />
-        );
-
-      case 'bollette':
-        return (
-          <LeMieBolletteScreen
-            onNavigateToPayment={(billId, importo, categoria) => {
-              setPaymentData({ billId, importo, categoria });
-              setCurrentScreen('pagamento');
+            onNavigateBack={() => {
+              setMessageTargetUserId(null);
+              setMessageTargetUserName(null);
+              setCurrentScreen('discover');
             }}
-            onBack={() => setCurrentScreen('home')}
-          />
-        );
-
-      case 'pagamento':
-        return paymentData ? (
-          <PagamentoScreen
-            billId={paymentData.billId}
-            importo={paymentData.importo}
-            categoria={paymentData.categoria}
-            onPaymentSuccess={() => {
-              setPaymentData(null);
-              setCurrentScreen('bollette');
-            }}
-            onBack={() => {
-              setPaymentData(null);
-              setCurrentScreen('bollette');
-            }}
-          />
-        ) : (
-          <HomeScreen
-            onNavigateToBills={() => setCurrentScreen('bollette')}
-            onNavigateToPayments={() => setCurrentScreen('bollette')}
-            onNavigateToProfile={() => setCurrentScreen('profilo')}
-            onNavigateToNotifications={() => {
-              Alert.alert('Info', 'Schermata notifiche in arrivo');
-            }}
-            onNavigateToHelp={() => setCurrentScreen('help')}
-            onNavigateToContracts={() => setCurrentScreen('documenti')}
-            onNavigateToContractSignature={() => setCurrentScreen('contractSignature')}
-          />
-        );
-
-      case 'immobili':
-        return (
-          <GestioneImmobiliScreen
-            onNavigateToPropertyDetails={(propertyId) => {
-              // TODO: Implement property details screen
-              Alert.alert('Info', `Dettagli immobile ${propertyId} in arrivo`);
-            }}
-            onNavigateToAddProperty={() => {
-              // TODO: Implement add property screen
-              Alert.alert('Info', 'Aggiungi immobile in arrivo');
-            }}
-            onBack={() => setCurrentScreen('home')}
-          />
-        );
-
-      case 'documenti':
-        return (
-          <DocumentiScreen
-            onBack={() => setCurrentScreen('profilo')}
+            targetUserId={messageTargetUserId}
+            targetUserName={messageTargetUserName}
           />
         );
 
@@ -715,10 +671,9 @@ export default function App() {
               // TODO: Implement verification screen
               Alert.alert('Info', 'Verifica identità in arrivo');
             }}
-            onNavigateToDocuments={() => setCurrentScreen('documenti')}
             onNavigateToSettings={() => setCurrentScreen('settings')}
             onLogout={handleLogout}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => setCurrentScreen('discover')}
             onRoleSwitch={handleRoleSwitch}
           />
         );
@@ -741,15 +696,7 @@ export default function App() {
       case 'help':
         return (
           <HelpCenterScreen
-            onNavigateBack={() => setCurrentScreen('home')}
-          />
-        );
-
-      case 'contractSignature':
-        return (
-          <ContractSignatureScreen
-            onBack={() => setCurrentScreen('home')}
-            contractId="contract-123"
+            onNavigateBack={() => setCurrentScreen('discover')}
           />
         );
 
@@ -779,7 +726,7 @@ export default function App() {
             </Text>
             <TouchableOpacity 
               style={{ backgroundColor: '#2196F3', padding: 15, borderRadius: 8, marginTop: 30 }}
-              onPress={() => setCurrentScreen('home')}
+              onPress={() => setCurrentScreen('discover')}
             >
               <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
                 Torna alla Home
@@ -800,7 +747,7 @@ export default function App() {
             </Text>
             <TouchableOpacity 
               style={{ backgroundColor: '#2196F3', padding: 15, borderRadius: 8, marginTop: 30 }}
-              onPress={() => setCurrentScreen('home')}
+              onPress={() => setCurrentScreen('discover')}
             >
               <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
                 Torna alla Home
@@ -821,7 +768,7 @@ export default function App() {
             </Text>
             <TouchableOpacity 
               style={{ backgroundColor: '#2196F3', padding: 15, borderRadius: 8, marginTop: 30 }}
-              onPress={() => setCurrentScreen('home')}
+              onPress={() => setCurrentScreen('discover')}
             >
               <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
                 Torna alla Home
@@ -844,7 +791,7 @@ export default function App() {
               setTimeout(() => {
                 if (hasCompleted) {
                   console.log('Onboarding completed, navigating to home');
-                  setCurrentScreen('home');
+                  setCurrentScreen('discover');
                 } else {
                   console.log('Onboarding not completed, navigating to onboarding');
                   setCurrentScreen('onboarding');
@@ -866,7 +813,7 @@ export default function App() {
               onComplete={handleHomeownerOnboardingComplete}
               onBack={() => {
                 setShowHomeownerOnboarding(false);
-                setCurrentScreen('home');
+                setCurrentScreen('discover');
               }}
             />
           ) : (

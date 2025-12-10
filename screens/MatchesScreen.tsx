@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -17,21 +18,32 @@ import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
 
 import { logger } from '../src/utils/logger';
 
+const { width } = Dimensions.get('window');
+
 interface MatchesScreenProps {
-  onNavigateBack: () => void;
+  onNavigateBack?: () => void;
+  onNavigateToDetail?: (match: MatchWithDetails) => void;
+  onNavigateToMessages?: (userId: string, userName: string) => void;
 }
 
-interface MatchWithDetails {
+export interface MatchWithDetails {
   match: Match;
   tenant: Utente;
   landlord: Utente;
   property: Property;
 }
 
-export default function MatchesScreen({ onNavigateBack }: MatchesScreenProps) {
+type TabType = 'properties' | 'roommates';
+
+export default function MatchesScreen({ onNavigateBack, onNavigateToDetail, onNavigateToMessages }: MatchesScreenProps) {
   const { user } = useSupabaseAuth();
   const [matches, setMatches] = useState<MatchWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('properties');
+  
+  // Determine user role
+  const userRole = user?.ruolo || user?.userType || 'tenant';
+  const isLandlord = userRole === 'landlord' || userRole === 'homeowner';
 
   useEffect(() => {
     loadMatches();
@@ -90,119 +102,114 @@ export default function MatchesScreen({ onNavigateBack }: MatchesScreenProps) {
     }
   };
 
-  const handleContactMatch = (match: MatchWithDetails) => {
-    const otherPerson = user?.ruolo === 'tenant' ? match.landlord : match.tenant;
-    Alert.alert(
-      'Contatta',
-      `Vuoi contattare ${otherPerson.nome}?`,
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { 
-          text: 'Invia Messaggio', 
-          onPress: () => {
-            // TODO: Implement messaging functionality
-            Alert.alert('Info', 'Funzionalità di messaggistica in arrivo!');
-          }
-        },
-      ]
-    );
+  const getPropertyTypeLabel = (property: Property): string => {
+    // Generate property type label based on bedrooms and location
+    const bedrooms = property.bedrooms || 1;
+    const location = property.location || '';
+    
+    if (bedrooms === 1) {
+      return `Monolocale${location.includes('Centro') || location.includes('centro') ? ' in Centro' : location.includes('Vista') || location.includes('vista') ? ' con Vista' : ''}`;
+    } else if (bedrooms === 2) {
+      return `Bilocale${location.includes('Centro') || location.includes('centro') ? ' in Centro' : ''}`;
+    } else if (bedrooms === 3) {
+      return `Trilocale${location.includes('Centro') || location.includes('centro') ? ' in Centro' : ''}`;
+    } else {
+      return `Appartamento${location.includes('Centro') || location.includes('centro') ? ' in Centro' : ''}`;
+    }
   };
 
-  const handleRemoveMatch = async (matchId: string) => {
-    Alert.alert(
-      'Rimuovi Match',
-      'Sei sicuro di voler rimuovere questo match?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { 
-          text: 'Rimuovi', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const success = await MatchingService.rejectMatch(matchId);
-              if (success) {
-                setMatches(prev => prev.filter(m => m.match.id !== matchId));
-                Alert.alert('Successo', 'Match rimosso con successo');
-              } else {
-                Alert.alert('Errore', 'Impossibile rimuovere il match');
-              }
-            } catch (error) {
-              console.error('Error removing match:', error);
-              Alert.alert('Errore', 'Si è verificato un errore');
-            }
-          }
-        },
-      ]
-    );
+  const handlePropertyPress = (match: MatchWithDetails) => {
+    if (onNavigateToDetail) {
+      onNavigateToDetail(match);
+    } else {
+      Alert.alert('Info', `Visualizza dettagli di ${match.property.title}`);
+    }
   };
 
-  const renderMatch = ({ item }: { item: MatchWithDetails }) => {
-    const otherPerson = user?.ruolo === 'tenant' ? item.landlord : item.tenant;
+  const handleContact = (otherUserId: string, otherUserName: string) => {
+    if (onNavigateToMessages) {
+      onNavigateToMessages(otherUserId, otherUserName);
+    } else {
+      Alert.alert('Contatta', `Vuoi contattare ${otherUserName}?`);
+    }
+  };
+
+  const renderPropertyCard = ({ item }: { item: MatchWithDetails }) => {
+    // For landlords, show the tenant instead of the property
+    if (isLandlord) {
+      const tenant = item.tenant;
+      const imageUri = tenant.foto || tenant.photos?.[0] || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500';
+      
+      return (
+        <TouchableOpacity 
+          style={styles.propertyCard}
+          onPress={() => handlePropertyPress(item)}
+          activeOpacity={0.7}
+        >
+          <Image 
+            source={{ uri: imageUri }} 
+            style={styles.propertyImage} 
+            resizeMode="cover"
+          />
+          <View style={styles.propertyInfo}>
+            <Text style={styles.propertyType}>{tenant.nome}</Text>
+            <Text style={styles.propertyAddress}>{tenant.indirizzo || tenant.preferences?.location || 'Indirizzo non disponibile'}</Text>
+            <Text style={styles.propertyPrice}>Inquilino</Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={24} color="#999" style={styles.arrowIcon} />
+        </TouchableOpacity>
+      );
+    }
+    
+    // For tenants, show the property
     const property = item.property;
+    const propertyType = getPropertyTypeLabel(property);
+    const imageUri = property.photos?.[0] || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500';
 
     return (
-      <View style={styles.matchCard}>
-        <View style={styles.matchHeader}>
-          <View style={styles.personInfo}>
-            <Image 
-              source={{ uri: otherPerson.foto || 'https://via.placeholder.com/50' }} 
-              style={styles.personAvatar} 
-            />
-            <View style={styles.personDetails}>
-              <Text style={styles.personName}>{otherPerson.nome}</Text>
-              <Text style={styles.matchDate}>
-                Match del {new Date(item.match.created_at).toLocaleDateString('it-IT')}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.removeButton}
-            onPress={() => handleRemoveMatch(item.match.id)}
-          >
-            <MaterialIcons name="close" size={20} color="#F44336" />
-          </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.propertyCard}
+        onPress={() => handlePropertyPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image 
+          source={{ uri: imageUri }} 
+          style={styles.propertyImage} 
+          resizeMode="cover"
+        />
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyType}>{propertyType}</Text>
+          <Text style={styles.propertyAddress}>{property.location}</Text>
+          <Text style={styles.propertyPrice}>€{property.rent}/mese</Text>
         </View>
+        <MaterialIcons name="chevron-right" size={24} color="#999" style={styles.arrowIcon} />
+      </TouchableOpacity>
+    );
+  };
 
-        <View style={styles.propertySection}>
-          <Text style={styles.propertyTitle}>{property.title}</Text>
-          <View style={styles.propertyLocation}>
-            <MaterialIcons name="location-on" size={16} color="#666" />
-            <Text style={styles.locationText}>{property.location}</Text>
-          </View>
-          <Text style={styles.propertyDescription} numberOfLines={2}>
-            {property.description}
-          </Text>
-          
-          <View style={styles.propertyDetails}>
-            <View style={styles.detailItem}>
-              <MaterialIcons name="bed" size={16} color="#4A90E2" />
-              <Text style={styles.detailText}>{property.bedrooms} camere</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <MaterialIcons name="bathtub" size={16} color="#4A90E2" />
-              <Text style={styles.detailText}>{property.bathrooms} bagni</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <MaterialIcons name="square-foot" size={16} color="#4A90E2" />
-              <Text style={styles.detailText}>{property.squareMeters}m²</Text>
-            </View>
-          </View>
-          
-          <View style={styles.rentInfo}>
-            <Text style={styles.rentAmount}>€{property.rent}/mese</Text>
-          </View>
-        </View>
+  const renderRoommateCard = ({ item }: { item: MatchWithDetails }) => {
+    // For roommates, show the tenant/landlord info
+    const otherPerson = user?.ruolo === 'tenant' ? item.landlord : item.tenant;
+    const imageUri = otherPerson.foto || otherPerson.photos?.[0] || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500';
 
-        <View style={styles.matchActions}>
-          <TouchableOpacity 
-            style={styles.contactButton}
-            onPress={() => handleContactMatch(item)}
-          >
-            <MaterialIcons name="message" size={20} color="white" />
-            <Text style={styles.contactButtonText}>Contatta</Text>
-          </TouchableOpacity>
+    return (
+      <TouchableOpacity 
+        style={styles.propertyCard}
+        onPress={() => handlePropertyPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image 
+          source={{ uri: imageUri }} 
+          style={styles.propertyImage} 
+          resizeMode="cover"
+        />
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyType}>{otherPerson.nome}</Text>
+          <Text style={styles.propertyAddress}>{otherPerson.indirizzo || otherPerson.preferences?.location || 'Indirizzo non disponibile'}</Text>
+          <Text style={styles.propertyPrice}>Coinquilino</Text>
         </View>
-      </View>
+        <MaterialIcons name="chevron-right" size={24} color="#999" style={styles.arrowIcon} />
+      </TouchableOpacity>
     );
   };
 
@@ -215,32 +222,82 @@ export default function MatchesScreen({ onNavigateBack }: MatchesScreenProps) {
     );
   }
 
+  const propertiesMatches = matches.filter(m => m.property);
+  const roommatesMatches = matches; // For now, show all matches as potential roommates
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onNavigateBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>I Tuoi Match</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>Le Mie Corrispondenze</Text>
       </View>
 
-      {matches.length === 0 ? (
-        <View style={styles.emptyState}>
-          <MaterialIcons name="favorite-border" size={80} color="#ccc" />
-          <Text style={styles.emptyTitle}>Nessun match ancora</Text>
-          <Text style={styles.emptyDescription}>
-            Continua a fare swipe per trovare la tua casa perfetta!
+      {/* Tab Bar */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'properties' && styles.tabActive]}
+          onPress={() => setActiveTab('properties')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'properties' && styles.tabTextActive]}>
+            {isLandlord ? 'Inquilini' : 'Proprietà'}
           </Text>
-        </View>
+        </TouchableOpacity>
+        {!isLandlord && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'roommates' && styles.tabActive]}
+            onPress={() => setActiveTab('roommates')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, activeTab === 'roommates' && styles.tabTextActive]}>
+              Coinquilini
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Content */}
+      {activeTab === 'properties' ? (
+        propertiesMatches.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialIcons name={isLandlord ? "people" : "home"} size={64} color="#ccc" />
+            <Text style={styles.emptyTitle}>
+              {isLandlord ? 'Nessun inquilino corrispondente' : 'Nessuna proprietà corrispondente'}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {isLandlord 
+                ? 'Continua a fare swipe per trovare inquilini interessati!'
+                : 'Continua a fare swipe per trovare la tua casa perfetta!'
+              }
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={propertiesMatches}
+            renderItem={renderPropertyCard}
+            keyExtractor={(item) => item.match.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )
       ) : (
-        <FlatList
-          data={matches}
-          renderItem={renderMatch}
-          keyExtractor={(item) => item.match.id}
-          contentContainerStyle={styles.matchesList}
-          showsVerticalScrollIndicator={false}
-        />
+        roommatesMatches.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialIcons name="people" size={64} color="#ccc" />
+            <Text style={styles.emptyTitle}>Nessun coinquilino corrispondente</Text>
+            <Text style={styles.emptyDescription}>
+              Continua a fare swipe per trovare il coinquilino perfetto!
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={roommatesMatches}
+            renderItem={renderRoommateCard}
+            keyExtractor={(item) => item.match.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )
       )}
     </SafeAreaView>
   );
@@ -263,25 +320,88 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  backButton: {
-    padding: 8,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
-  placeholder: {
-    width: 40,
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#2196F3',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+  },
+  listContent: {
+    padding: 20,
+    paddingTop: 16,
+  },
+  propertyCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 16,
+    padding: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  propertyImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+  },
+  propertyInfo: {
+    flex: 1,
+    marginLeft: 16,
+    justifyContent: 'center',
+  },
+  propertyType: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  propertyAddress: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  propertyPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2196F3',
+  },
+  arrowIcon: {
+    marginLeft: 8,
   },
   emptyState: {
     flex: 1,
@@ -290,128 +410,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     color: '#333',
     marginTop: 20,
     marginBottom: 10,
   },
   emptyDescription: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 24,
-  },
-  matchesList: {
-    padding: 20,
-  },
-  matchCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    marginBottom: 15,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  matchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  personInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  personAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  personDetails: {
-    flex: 1,
-  },
-  personName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  matchDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  removeButton: {
-    padding: 8,
-  },
-  propertySection: {
-    marginBottom: 15,
-  },
-  propertyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  propertyLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
-  },
-  propertyDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  propertyDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 12,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  rentInfo: {
-    alignItems: 'flex-end',
-  },
-  rentAmount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4A90E2',
-  },
-  matchActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  contactButton: {
-    backgroundColor: '#4A90E2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  contactButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
+    lineHeight: 22,
   },
 });

@@ -130,9 +130,12 @@ export default function PropertySwipeScreen({ onNavigateToMatches, onNavigateToP
   }, [user?.id, user?.ruolo, user?.userType]); // Re-fetch when user or role changes
 
   const handleSwipeLeft = () => {
-    logger.debug('🏠 PropertySwipeScreen - Swiped left on property:', properties[currentIndex]?.title);
+    logger.debug('🏠 PropertySwipeScreen - X button pressed, swiping left on property:', properties[currentIndex]?.title);
     if (currentIndex < properties.length - 1) {
       setCurrentIndex(currentIndex + 1);
+    } else {
+      // If no more properties, show no more listings screen
+      logger.debug('🏠 PropertySwipeScreen - No more properties to show');
     }
   };
 
@@ -221,36 +224,54 @@ export default function PropertySwipeScreen({ onNavigateToMatches, onNavigateToP
         </TouchableOpacity>
       </View>
 
-      <View style={styles.cardContainer}>
-        <SwipeCard
-          item={currentProperty}
-          isPropertyView={true}
-          onSwipeLeft={handleSwipeLeft}
-          onSwipeRight={handleSwipeRight}
-          onPress={handleCardPress}
-          isFirst={true}
-        />
-        
-        {nextProperty && (
+      <View style={styles.contentWrapper}>
+        <View style={styles.cardContainer} pointerEvents="box-none">
           <SwipeCard
-            item={nextProperty}
+            item={currentProperty}
             isPropertyView={true}
             onSwipeLeft={handleSwipeLeft}
             onSwipeRight={handleSwipeRight}
             onPress={handleCardPress}
-            isFirst={false}
+            isFirst={true}
           />
-        )}
-      </View>
+          
+          {nextProperty && (
+            <SwipeCard
+              item={nextProperty}
+              isPropertyView={true}
+              onSwipeLeft={handleSwipeLeft}
+              onSwipeRight={handleSwipeRight}
+              onPress={handleCardPress}
+              isFirst={false}
+            />
+          )}
+        </View>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.rejectButton} onPress={handleSwipeLeft}>
-          <MaterialIcons name="close" size={32} color="#f44336" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.likeButton} onPress={handleSwipeRight}>
-          <MaterialIcons name="favorite" size={32} color="#4caf50" />
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.rejectButton} 
+            onPress={() => {
+              console.log('X button pressed!');
+              handleSwipeLeft();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialIcons name="close" size={32} color="#f44336" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.likeButton} 
+            onPress={() => {
+              console.log('Heart button pressed!');
+              handleSwipeRight();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialIcons name="favorite" size={32} color="#4caf50" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <PropertyDetailModal
@@ -318,20 +339,32 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#e3f2fd',
   },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   cardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 20,
+    minHeight: 0, // Allow flex to work properly
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingVertical: 30,
+    paddingVertical: 25,
+    paddingBottom: 30,
     backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    minHeight: 100,
+    zIndex: 1000,
+    elevation: 10,
   },
   rejectButton: {
     width: 60,
@@ -344,7 +377,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 11,
+    zIndex: 1001,
   },
   likeButton: {
     width: 60,
@@ -357,6 +391,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 11,
+    zIndex: 1001,
   },
 });

@@ -25,10 +25,11 @@ const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
+  onSignupSuccess?: () => void;
   onNavigateToSignup: () => void;
 }
 
-export default function LoginScreen({ onLoginSuccess, onNavigateToSignup }: LoginScreenProps) {
+export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigateToSignup }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nome, setNome] = useState('');
@@ -104,7 +105,11 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToSignup }: Logi
           setTimeout(() => {
             if (result.isNewUser) {
               logger.debug('New Apple user - triggering onboarding');
-              onLoginSuccess();
+              if (onSignupSuccess) {
+                onSignupSuccess();
+              } else {
+                onLoginSuccess();
+              }
               Alert.alert('Benvenuto!', 'Account creato con successo. Completa la configurazione del tuo profilo.');
             } else {
               logger.debug('Existing Apple user - direct login');
@@ -158,7 +163,12 @@ export default function LoginScreen({ onLoginSuccess, onNavigateToSignup }: Logi
       const result = await signUp(email.trim(), password, nome.trim(), ruolo);
       
       if (result.success) {
-        onLoginSuccess();
+        // For new signups, go directly to onboarding
+        if (onSignupSuccess) {
+          onSignupSuccess();
+        } else {
+          onLoginSuccess();
+        }
       } else {
         Alert.alert('Errore', result.error || 'Errore durante la registrazione');
       }

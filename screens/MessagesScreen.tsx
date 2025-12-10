@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,159 +8,271 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
-
-interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  senderName: string;
-  receiverName: string;
-}
-
-interface Conversation {
-  id: string;
-  participantId: string;
-  participantName: string;
-  participantAvatar?: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  isOnline: boolean;
-}
+import { MessagingService, Message, Conversation } from '../src/services/messagingService';
+import { supabase } from '../src/lib/supabase';
 
 interface MessagesScreenProps {
   onNavigateBack: () => void;
+  targetUserId?: string | null;
+  targetUserName?: string | null;
 }
 
-export default function MessagesScreen({ onNavigateBack }: MessagesScreenProps) {
+export default function MessagesScreen({ onNavigateBack, targetUserId, targetUserName }: MessagesScreenProps) {
   const { user } = useSupabaseAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationOtherUserId, setSelectedConversationOtherUserId] = useState<string | null>(null);
+  const [selectedConversationOtherUserName, setSelectedConversationOtherUserName] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
-  // Mock conversations data
-  const MOCK_CONVERSATIONS: Conversation[] = [
-    {
-      id: 'conv1',
-      participantId: 'user1',
-      participantName: 'Marco Rossi',
-      participantAvatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-      lastMessage: 'Ciao! Sono interessato all\'appartamento che hai pubblicato.',
-      lastMessageTime: '2 ore fa',
-      unreadCount: 2,
-      isOnline: true,
-    },
-    {
-      id: 'conv2',
-      participantId: 'user2',
-      participantName: 'Sofia Bianchi',
-      participantAvatar: 'https://randomuser.me/api/portraits/women/2.jpg',
-      lastMessage: 'Perfetto! Quando possiamo vederci?',
-      lastMessageTime: '1 giorno fa',
-      unreadCount: 0,
-      isOnline: false,
-    },
-    {
-      id: 'conv3',
-      participantId: 'user3',
-      participantName: 'Alessandro Verdi',
-      participantAvatar: 'https://randomuser.me/api/portraits/men/3.jpg',
-      lastMessage: 'Grazie per la disponibilità!',
-      lastMessageTime: '3 giorni fa',
-      unreadCount: 1,
-      isOnline: true,
-    },
-  ];
-
-  // Mock messages data
-  const MOCK_MESSAGES: Message[] = [
-    {
-      id: 'msg1',
-      senderId: 'user1',
-      receiverId: user?.id || 'current_user',
-      content: 'Ciao! Sono interessato all\'appartamento che hai pubblicato.',
-      timestamp: '2024-01-15T10:30:00Z',
-      isRead: false,
-      senderName: 'Marco Rossi',
-      receiverName: user?.nome || 'Tu',
-    },
-    {
-      id: 'msg2',
-      senderId: user?.id || 'current_user',
-      receiverId: 'user1',
-      content: 'Ciao Marco! Grazie per l\'interesse. L\'appartamento è ancora disponibile.',
-      timestamp: '2024-01-15T10:35:00Z',
-      isRead: true,
-      senderName: user?.nome || 'Tu',
-      receiverName: 'Marco Rossi',
-    },
-    {
-      id: 'msg3',
-      senderId: 'user1',
-      receiverId: user?.id || 'current_user',
-      content: 'Perfetto! Quando possiamo vederci per una visita?',
-      timestamp: '2024-01-15T10:40:00Z',
-      isRead: false,
-      senderName: 'Marco Rossi',
-      receiverName: user?.nome || 'Tu',
-    },
-  ];
-
+  // Load conversations on mount
   useEffect(() => {
-    loadConversations();
+    if (user) {
+      loadConversations();
+    }
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, [user]);
+
+  // If targetUserId is provided, automatically open/create that conversation
+  useEffect(() => {
+    if (targetUserId && targetUserName && user) {
+      openConversationWithUser(targetUserId, targetUserName);
+    }
+  }, [targetUserId, targetUserName, user]);
+
+  // Load conversations on mount
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    }
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
   }, [user]);
 
   const loadConversations = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setConversations(MOCK_CONVERSATIONS);
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
+      const convs = await MessagingService.getConversations(user.id);
+      setConversations(convs);
+      
+      // Update selected conversation's other user info if available
+      if (selectedConversationId) {
+        const updatedConversation = convs.find(c => c.id === selectedConversationId);
+        if (updatedConversation) {
+          const otherUserId = updatedConversation.participant1_id === user.id 
+            ? updatedConversation.participant2_id 
+            : updatedConversation.participant1_id;
+          setSelectedConversationOtherUserId(otherUserId);
+          if (updatedConversation.other_user?.nome) {
+            setSelectedConversationOtherUserName(updatedConversation.other_user.nome);
+          }
+        }
+      }
+    } catch (error: any) {
       console.error('Error loading conversations:', error);
+      // Don't show alert for network errors - might be missing tables
+      // Just set empty array and let user see empty state
+      setConversations([]);
+    } finally {
       setLoading(false);
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  const openConversationWithUser = async (otherUserId: string, otherUserName: string) => {
+    if (!user) return;
+
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setMessages(MOCK_MESSAGES);
-        setSelectedConversation(conversationId);
-      }, 500);
+      console.log('Opening conversation with user:', otherUserId, otherUserName);
+      
+      // Get or create conversation
+      const conversationId = await MessagingService.getOrCreateConversation(user.id, otherUserId);
+      
+      console.log('Got conversation ID:', conversationId);
+      
+      // Check if it's a temporary ID (database not set up)
+      if (conversationId.startsWith('temp_')) {
+        console.log('Database not set up - got temp ID');
+        Alert.alert(
+          'Database non configurato',
+          'Le tabelle del database non sono ancora state create. Esegui lo script SQL fornito in Supabase per abilitare la messaggistica.\n\nDettagli: La tabella "conversations" non esiste nel database.'
+        );
+        return;
+      }
+      
+      setSelectedConversationId(conversationId);
+      setSelectedConversationOtherUserId(otherUserId);
+      
+      // Try to fetch the actual user name from database, fallback to provided name
+      let displayName = otherUserName;
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('utenti')
+          .select('nome')
+          .eq('id', otherUserId)
+          .single();
+        
+        if (!userError && userData?.nome) {
+          displayName = userData.nome;
+          console.log('Fetched user name from database:', displayName);
+        } else {
+          console.log('Could not fetch user name, using provided:', otherUserName);
+        }
+      } catch (error) {
+        // Use the provided name as fallback
+        console.log('Error fetching user name from database, using provided name:', otherUserName, error);
+      }
+      
+      setSelectedConversationOtherUserName(displayName);
+      await loadMessages(conversationId);
+      
+      // Mark messages as read
+      await MessagingService.markMessagesAsRead(conversationId, user.id);
+      
+      // Reload conversations to update unread counts
+      await loadConversations();
+    } catch (error: any) {
+      console.error('Error opening conversation:', error);
+      // Don't show alert - might be network/table issues
+      // Just log the error
+    }
+  };
+
+  const loadMessages = async (conversationId: string) => {
+    if (!user) return;
+
+    try {
+      const msgs = await MessagingService.getMessages(conversationId);
+      setMessages(msgs);
+      setSelectedConversationId(conversationId);
+      
+      // Find the conversation to get the other user's info
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation) {
+        const otherUserId = conversation.participant1_id === user.id 
+          ? conversation.participant2_id 
+          : conversation.participant1_id;
+        setSelectedConversationOtherUserId(otherUserId);
+        if (conversation.other_user?.nome) {
+          setSelectedConversationOtherUserName(conversation.other_user.nome);
+        }
+      }
+      
+      // Mark messages as read
+      await MessagingService.markMessagesAsRead(conversationId, user.id);
+      
+      // Subscribe to new messages
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+      
+      unsubscribeRef.current = MessagingService.subscribeToMessages(
+        conversationId,
+        (newMessage) => {
+          setMessages(prev => [...prev, newMessage]);
+          // Mark as read if it's for current user
+          if (newMessage.receiver_id === user.id) {
+            MessagingService.markMessagesAsRead(conversationId, user.id);
+          }
+        }
+      );
     } catch (error) {
       console.error('Error loading messages:', error);
+      // Don't show alert for network errors, just log them
+      // Alert.alert('Errore', 'Impossibile caricare i messaggi');
     }
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversationId || !user) {
+      console.log('Cannot send: missing message, conversation, or user', {
+        hasMessage: !!newMessage.trim(),
+        hasConversation: !!selectedConversationId,
+        hasUser: !!user
+      });
+      return;
+    }
 
-    const message: Message = {
-      id: `msg_${Date.now()}`,
-      senderId: user?.id || 'current_user',
-      receiverId: selectedConversation,
-      content: newMessage.trim(),
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      senderName: user?.nome || 'Tu',
-      receiverName: 'Destinatario',
-    };
+    // Check if it's a temporary ID (database not set up)
+    if (selectedConversationId.startsWith('temp_')) {
+      Alert.alert(
+        'Database non configurato',
+        'Le tabelle del database non sono ancora state create. Esegui lo script SQL fornito in Supabase per abilitare la messaggistica.'
+      );
+      return;
+    }
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
+    // Get receiver ID from conversation or from state
+    let receiverId = selectedConversationOtherUserId;
+    
+    if (!receiverId) {
+      // Try to find it from conversations array
+      const conversation = conversations.find(c => c.id === selectedConversationId);
+      if (conversation) {
+        receiverId = conversation.participant1_id === user.id
+          ? conversation.participant2_id
+          : conversation.participant1_id;
+      }
+    }
+
+    if (!receiverId) {
+      console.error('Cannot determine receiver ID', {
+        selectedConversationId,
+        selectedConversationOtherUserId,
+        conversationsCount: conversations.length
+      });
+      Alert.alert('Errore', 'Impossibile determinare il destinatario');
+      return;
+    }
+
+    console.log('Sending message', {
+      conversationId: selectedConversationId,
+      senderId: user.id,
+      receiverId,
+      messageLength: newMessage.trim().length
+    });
+
+    try {
+      const sentMessage = await MessagingService.sendMessage(
+        selectedConversationId,
+        user.id,
+        receiverId,
+        newMessage.trim()
+      );
+
+      if (sentMessage) {
+        console.log('Message sent successfully', sentMessage.id);
+        setMessages(prev => [...prev, sentMessage]);
+        setNewMessage('');
+        // Reload conversations to update last message
+        await loadConversations();
+      } else {
+        console.log('Message not sent - returned null');
+        Alert.alert(
+          'Errore',
+          'Impossibile inviare il messaggio. Verifica che le tabelle del database siano state create.'
+        );
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Errore', 'Impossibile inviare il messaggio');
+    }
   };
 
   const formatTime = (timestamp: string) => {
@@ -177,39 +289,53 @@ export default function MessagesScreen({ onNavigateBack }: MessagesScreenProps) 
     }
   };
 
-  const renderConversation = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity
-      style={styles.conversationItem}
-      onPress={() => loadMessages(item.id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.conversationAvatar}>
-        <MaterialIcons name="person" size={24} color="#666" />
-        {item.isOnline && <View style={styles.onlineIndicator} />}
-      </View>
-      <View style={styles.conversationContent}>
-        <View style={styles.conversationHeader}>
-          <Text style={styles.participantName} numberOfLines={1}>
-            {item.participantName}
-          </Text>
-          <Text style={styles.lastMessageTime}>{item.lastMessageTime}</Text>
-        </View>
-        <View style={styles.messageRow}>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage}
-          </Text>
-          {item.unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCount}>{item.unreadCount}</Text>
-            </View>
+  const renderConversation = ({ item }: { item: Conversation }) => {
+    const otherUserName = item.other_user?.nome || 'Utente';
+    const lastMessageText = item.last_message?.content || 'Nessun messaggio';
+    const lastMessageTime = item.last_message_at 
+      ? formatTime(item.last_message_at) 
+      : '';
+    
+    return (
+      <TouchableOpacity
+        style={styles.conversationItem}
+        onPress={() => loadMessages(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.conversationAvatar}>
+          {item.other_user?.foto ? (
+            <Image 
+              source={{ uri: item.other_user.foto }} 
+              style={styles.avatarImage}
+            />
+          ) : (
+            <MaterialIcons name="person" size={24} color="#666" />
           )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationHeader}>
+            <Text style={styles.participantName} numberOfLines={1}>
+              {otherUserName}
+            </Text>
+            <Text style={styles.lastMessageTime}>{lastMessageTime}</Text>
+          </View>
+          <View style={styles.messageRow}>
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {lastMessageText}
+            </Text>
+            {(item.unread_count || 0) > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadCount}>{item.unread_count}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderMessage = ({ item }: { item: Message }) => {
-    const isOwnMessage = item.senderId === user?.id;
+    const isOwnMessage = item.sender_id === user?.id;
     
     return (
       <View style={[
@@ -226,7 +352,7 @@ export default function MessagesScreen({ onNavigateBack }: MessagesScreenProps) 
           styles.messageTime,
           isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime
         ]}>
-          {formatTime(item.timestamp)}
+          {formatTime(item.created_at)}
         </Text>
       </View>
     );
@@ -252,23 +378,43 @@ export default function MessagesScreen({ onNavigateBack }: MessagesScreenProps) 
     );
   }
 
-  if (selectedConversation) {
-    const conversation = conversations.find(c => c.id === selectedConversation);
+  if (selectedConversationId) {
+    const conversation = conversations.find(c => c.id === selectedConversationId);
+    const displayName = selectedConversationOtherUserName 
+      || conversation?.other_user?.nome 
+      || targetUserName 
+      || 'Utente';
+    
+    // Debug log
+    if (!selectedConversationOtherUserName && !conversation?.other_user?.nome) {
+      console.log('User name not found:', {
+        selectedConversationOtherUserName,
+        conversationOtherUser: conversation?.other_user,
+        targetUserName,
+        selectedConversationOtherUserId
+      });
+    }
     
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => setSelectedConversation(null)} 
+            onPress={() => {
+              setSelectedConversationId(null);
+              setSelectedConversationOtherUserId(null);
+              setSelectedConversationOtherUserName(null);
+              if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+              }
+            }} 
             style={styles.backButton}
           >
             <MaterialIcons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{conversation?.participantName}</Text>
-            <Text style={styles.headerSubtitle}>
-              {conversation?.isOnline ? 'Online' : 'Offline'}
-            </Text>
+            <Text style={styles.headerTitle}>{displayName}</Text>
+            <Text style={styles.headerSubtitle}>Messaggi</Text>
           </View>
           <TouchableOpacity style={styles.headerButton}>
             <MaterialIcons name="more-vert" size={24} color="#333" />
@@ -316,13 +462,31 @@ export default function MessagesScreen({ onNavigateBack }: MessagesScreenProps) 
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={conversations}
-        keyExtractor={(item) => item.id}
-        renderItem={renderConversation}
-        style={styles.conversationsList}
-        showsVerticalScrollIndicator={false}
-      />
+      {conversations.length === 0 && !loading ? (
+        <View style={styles.emptyState}>
+          <MaterialIcons name="message" size={80} color="#ccc" />
+          <Text style={styles.emptyTitle}>Nessun messaggio</Text>
+          <Text style={styles.emptyDescription}>
+            Inizia una conversazione dai tuoi match per vedere i messaggi qui.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderConversation}
+          style={styles.conversationsList}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#2196F3" />
+                <Text style={styles.loadingText}>Caricamento messaggi...</Text>
+              </View>
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -377,6 +541,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
   conversationsList: {
     flex: 1,
   },
@@ -409,6 +594,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   onlineIndicator: {
     position: 'absolute',
