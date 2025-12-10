@@ -177,97 +177,6 @@ export type Database = {
           updated_at?: string;
         };
       };
-      bollette: {
-        Row: {
-          id: string;
-          lease_id: string;
-          categoria: 'affitto' | 'luce' | 'gas' | 'acqua' | 'riscaldamento' | 'condominio' | 'tasse' | 'altro';
-          descrizione: string;
-          importo: number;
-          data_scadenza: string;
-          data_emissione: string;
-          stato: 'da_pagare' | 'pagato' | 'scaduto' | 'in_ritardo';
-          ricevuta_url?: string;
-          note?: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          lease_id: string;
-          categoria: 'affitto' | 'luce' | 'gas' | 'acqua' | 'riscaldamento' | 'condominio' | 'tasse' | 'altro';
-          descrizione: string;
-          importo: number;
-          data_scadenza: string;
-          data_emissione: string;
-          stato?: 'da_pagare' | 'pagato' | 'scaduto' | 'in_ritardo';
-          ricevuta_url?: string;
-          note?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          lease_id?: string;
-          categoria?: 'affitto' | 'luce' | 'gas' | 'acqua' | 'riscaldamento' | 'condominio' | 'tasse' | 'altro';
-          descrizione?: string;
-          importo?: number;
-          data_scadenza?: string;
-          data_emissione?: string;
-          stato?: 'da_pagare' | 'pagato' | 'scaduto' | 'in_ritardo';
-          ricevuta_url?: string;
-          note?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      pagamenti: {
-        Row: {
-          id: string;
-          bill_id: string;
-          utente_id: string;
-          importo: number;
-          metodo: 'pagopa' | 'bonifico' | 'contanti' | 'carta';
-          stato: 'in_attesa' | 'completato' | 'fallito' | 'rimborsato';
-          data_pagamento?: string;
-          transazione_id?: string;
-          link_pagamento?: string;
-          cashback_guadagnato: number;
-          note?: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          bill_id: string;
-          utente_id: string;
-          importo: number;
-          metodo: 'pagopa' | 'bonifico' | 'contanti' | 'carta';
-          stato?: 'in_attesa' | 'completato' | 'fallito' | 'rimborsato';
-          data_pagamento?: string;
-          transazione_id?: string;
-          link_pagamento?: string;
-          cashback_guadagnato?: number;
-          note?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          bill_id?: string;
-          utente_id?: string;
-          importo?: number;
-          metodo?: 'pagopa' | 'bonifico' | 'contanti' | 'carta';
-          stato?: 'in_attesa' | 'completato' | 'fallito' | 'rimborsato';
-          data_pagamento?: string;
-          transazione_id?: string;
-          link_pagamento?: string;
-          cashback_guadagnato?: number;
-          note?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
       notifiche: {
         Row: {
           id: string;
@@ -300,38 +209,6 @@ export type Database = {
           letta?: boolean;
           data_scadenza?: string;
           azione_richiesta?: string;
-          created_at?: string;
-        };
-      };
-      cashback: {
-        Row: {
-          id: string;
-          utente_id: string;
-          importo: number;
-          fonte: 'affitto' | 'bollette' | 'bonus' | 'referral';
-          descrizione: string;
-          data_guadagno: string;
-          stato: 'pending' | 'disponibile' | 'utilizzato';
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          utente_id: string;
-          importo: number;
-          fonte: 'affitto' | 'bollette' | 'bonus' | 'referral';
-          descrizione: string;
-          data_guadagno: string;
-          stato?: 'pending' | 'disponibile' | 'utilizzato';
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          utente_id?: string;
-          importo?: number;
-          fonte?: 'affitto' | 'bollette' | 'bonus' | 'referral';
-          descrizione?: string;
-          data_guadagno?: string;
-          stato?: 'pending' | 'disponibile' | 'utilizzato';
           created_at?: string;
         };
       };

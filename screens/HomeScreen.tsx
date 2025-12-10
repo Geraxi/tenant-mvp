@@ -14,9 +14,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
-import { usePayments } from '../src/hooks/usePayments';
 import { useNotifications } from '../src/hooks/useNotifications';
-import { Utente, Bolletta } from '../src/types';
+import { Utente } from '../src/types';
 import { FadeIn, ScaleIn, GradientCard, Shimmer } from '../components/AnimatedComponents';
 
 import { logger } from '../src/utils/logger';
@@ -44,26 +43,10 @@ export default function HomeScreen({
 }: HomeScreenProps) {
   const { user } = useSupabaseAuth();
   logger.debug('HomeScreen - User data:', user);
-  const { 
-    getUpcomingBills, 
-    getOverdueBills, 
-    getMonthlyStats, 
-    getTotalCashback,
-    fetchBollette 
-  } = usePayments(user?.id || '');
   const { unreadCount } = useNotifications(user?.id || '');
   
   const [refreshing, setRefreshing] = useState(false);
-  const [upcomingBills, setUpcomingBills] = useState<Bolletta[]>([]);
-  const [overdueBills, setOverdueBills] = useState<Bolletta[]>([]);
-  const [monthlyStats, setMonthlyStats] = useState({
-    totalePagato: 0,
-    totaleDaPagare: 0,
-    cashbackGuadagnato: 0,
-    bollettePagate: 0,
-  });
-  const [totalCashback, setTotalCashback] = useState(0);
-  const [hasBills, setHasBills] = useState(true); // This would come from user data
+  const [hasBills, setHasBills] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -73,16 +56,7 @@ export default function HomeScreen({
 
   const loadData = async () => {
     try {
-      await fetchBollette();
-      const upcoming = getUpcomingBills();
-      const overdue = getOverdueBills();
-      const stats = getMonthlyStats();
-      const cashback = getTotalCashback();
-      
-      setUpcomingBills(upcoming);
-      setOverdueBills(overdue);
-      setMonthlyStats(stats);
-      setTotalCashback(cashback);
+      // Load any necessary data here
     } catch (error) {
       console.error('Error loading home data:', error);
     }
@@ -208,7 +182,7 @@ export default function HomeScreen({
             <View style={styles.chartContainer}>
               <View style={styles.donutChart}>
                 <View style={styles.donutChartInner}>
-                  <Text style={styles.chartCenterText}>€{monthlyStats.totalePagato + monthlyStats.totaleDaPagare}</Text>
+                  <Text style={styles.chartCenterText}>€0</Text>
                   <Text style={styles.chartCenterSubtext}>Totale</Text>
                 </View>
               </View>

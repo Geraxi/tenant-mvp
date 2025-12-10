@@ -68,36 +68,6 @@ export interface Contratto {
   updated_at: string;
 }
 
-export interface Bolletta {
-  id: string;
-  lease_id: string;
-  categoria: 'affitto' | 'luce' | 'gas' | 'acqua' | 'riscaldamento' | 'condominio' | 'tasse' | 'altro';
-  descrizione: string;
-  importo: number;
-  data_scadenza: string;
-  data_emissione: string;
-  stato: 'da_pagare' | 'pagato' | 'scaduto' | 'in_ritardo';
-  ricevuta_url?: string;
-  note?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Pagamento {
-  id: string;
-  bill_id: string;
-  utente_id: string;
-  importo: number;
-  metodo: 'pagopa' | 'bonifico' | 'contanti' | 'carta';
-  stato: 'in_attesa' | 'completato' | 'fallito' | 'rimborsato';
-  data_pagamento?: string;
-  transazione_id?: string;
-  link_pagamento?: string;
-  cashback_guadagnato: number;
-  note?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface Notifica {
   id: string;
@@ -111,16 +81,6 @@ export interface Notifica {
   created_at: string;
 }
 
-export interface Cashback {
-  id: string;
-  utente_id: string;
-  importo: number;
-  fonte: 'affitto' | 'bollette' | 'bonus' | 'referral';
-  descrizione: string;
-  data_guadagno: string;
-  stato: 'pending' | 'disponibile' | 'utilizzato';
-  created_at: string;
-}
 
 export interface Documento {
   id: string;
@@ -134,53 +94,19 @@ export interface Documento {
   created_at: string;
 }
 
-export interface ReportMensile {
-  mese: string;
-  anno: number;
-  totale_affitti: number;
-  totale_bollette: number;
-  totale_pagamenti: number;
-  cashback_guadagnato: number;
-  bollette_scadute: number;
-  pagamenti_in_ritardo: number;
-}
-
-// Pagopa Integration Types
-export interface PagopaPayment {
-  id: string;
-  importo: number;
-  categoria: string;
-  descrizione: string;
-  stato: 'in_attesa' | 'completato' | 'fallito' | 'annullato';
-  link_pagamento: string;
-  data_scadenza: string;
-  utente_id: string;
-  created_at: string;
-}
-
-export interface PagopaResponse {
-  success: boolean;
-  data?: PagopaPayment;
-  error?: string;
-}
 
 // Navigation Types
 export type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
   Home: undefined;
-  LeMieBollette: undefined;
-  Pagamento: { billId: string; importo: number; categoria: string };
   GestioneImmobili: undefined;
   Documenti: undefined;
   Profilo: undefined;
   Notifiche: undefined;
-  Report: undefined;
 };
 
 // Filter Types
-export type FiltroBollette = 'tutte' | 'da_pagare' | 'pagate' | 'scadute' | 'questo_mese' | 'anno_corrente';
-export type FiltroPagamenti = 'tutti' | 'completati' | 'in_attesa' | 'falliti' | 'questo_mese' | 'anno_corrente';
 export type FiltroImmobili = 'tutti' | 'disponibili' | 'affittati' | 'miei_immobili';
 
 // Chart Data Types
@@ -193,12 +119,3 @@ export interface ChartData {
   }[];
 }
 
-// Statistics Types
-export interface StatisticheUtente {
-  totale_pagamenti: number;
-  cashback_totale: number;
-  bollette_pagate: number;
-  bollette_scadute: number;
-  prossima_scadenza?: string;
-  importo_prossima_scadenza?: number;
-}

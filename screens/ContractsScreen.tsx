@@ -10,9 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { t } from '../utils/translations';
-import { SPIDAuthScreen } from './SPIDAuthScreen';
 import { ContractPreviewScreen } from './ContractPreviewScreen';
-import { ADEIntegrationScreen } from './ADEIntegrationScreen';
 import { ContractSigningScreen } from './ContractSigningScreen';
 
 export interface Contract {
@@ -23,7 +21,7 @@ export interface Contract {
   monthlyRent: number;
   startDate: string;
   endDate: string;
-  status: 'draft' | 'sent' | 'signed_by_owner' | 'signed_by_tenant' | 'signed' | 'pending_review' | 'published_ade';
+  status: 'draft' | 'sent' | 'signed_by_owner' | 'signed_by_tenant' | 'signed' | 'pending_review';
   role: 'tenant' | 'homeowner';
   // Dual signing support
   ownerSignature?: {
@@ -40,9 +38,6 @@ export interface Contract {
     provider: string;
     signerFiscalCode: string;
   };
-  // Notification support
-  needsADESubmission?: boolean;
-  adeSubmissionReminder?: boolean;
 }
 
 interface ContractsScreenProps {
@@ -60,12 +55,8 @@ export default function ContractsScreen({
   onViewContract,
   onDownloadPDF
 }: ContractsScreenProps) {
-  const [showSPIDAuth, setShowSPIDAuth] = useState(false);
-  const [selectedContractForSPID, setSelectedContractForSPID] = useState<Contract | null>(null);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [showADEIntegration, setShowADEIntegration] = useState(false);
-  const [selectedContractForADE, setSelectedContractForADE] = useState<Contract | null>(null);
   const [showContractSigning, setShowContractSigning] = useState(false);
   const [selectedContractForSigning, setSelectedContractForSigning] = useState<Contract | null>(null);
   
@@ -102,33 +93,8 @@ export default function ContractsScreen({
       case 'signed_by_tenant': return 'Firmato dall\'Inquilino';
       case 'signed': return 'Firmato da Entrambi';
       case 'pending_review': return 'In Revisione';
-      case 'published_ade': return 'Pubblicato ADE';
       default: return status;
     }
-  };
-
-  const handlePublishWithSPID = (contract: Contract) => {
-    setSelectedContractForSPID(contract);
-    setShowSPIDAuth(true);
-  };
-
-  const handleSPIDAuthSuccess = (user: any) => {
-    setShowSPIDAuth(false);
-    setSelectedContractForSPID(null);
-    
-    Alert.alert(
-      'Pubblicazione Completata',
-      'Il contratto è stato pubblicato con successo all\'Agenzia delle Entrate.',
-      [{ text: 'OK' }]
-    );
-    
-    // In a real implementation, you would update the contract status here
-    // and make an API call to publish to ADE
-  };
-
-  const handleSPIDAuthBack = () => {
-    setShowSPIDAuth(false);
-    setSelectedContractForSPID(null);
   };
 
   const handleContractPress = (contract: Contract) => {
@@ -145,27 +111,6 @@ export default function ContractsScreen({
     onDownloadPDF(contract);
     setShowContractPreview(false);
     setSelectedContract(null);
-  };
-
-  const handlePublishToADE = (contract: Contract) => {
-    setSelectedContractForADE(contract);
-    setShowADEIntegration(true);
-  };
-
-  const handleADESuccess = (contractNumber: string) => {
-    setShowADEIntegration(false);
-    setSelectedContractForADE(null);
-    
-    Alert.alert(
-      'Successo!',
-      `Contratto registrato con successo all'Agenzia delle Entrate.\nNumero Contratto: ${contractNumber}`,
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleADEBack = () => {
-    setShowADEIntegration(false);
-    setSelectedContractForADE(null);
   };
 
   const handleStartSigning = (contract: Contract) => {
@@ -193,15 +138,14 @@ export default function ContractsScreen({
       if (hasOwnerSignature && hasTenantSignature) {
         // Both parties have signed
         updatedContract.status = 'signed';
-        updatedContract.needsADESubmission = true;
         
-        // Send notification to owner about ADE submission
+        // Send notification
         const { sendContractFullySignedNotification } = await import('../utils/notificationService');
         await sendContractFullySignedNotification(updatedContract);
         
         Alert.alert(
           'Contratto Completamente Firmato!',
-          'Entrambe le parti hanno firmato il contratto. È ora di inviarlo all\'Agenzia delle Entrate.',
+          'Entrambe le parti hanno firmato il contratto.',
           [{ text: 'OK' }]
         );
       } else {
@@ -348,7 +292,7 @@ export default function ContractsScreen({
               <Text style={styles.signingButtonText}>
                 {item.status === 'signed_by_owner' || item.status === 'signed_by_tenant' 
                   ? 'Completa Firma' 
-                  : 'Firma con SPID'
+                  : 'Firma Contratto'
                 }
               </Text>
             </TouchableOpacity>
@@ -376,51 +320,11 @@ export default function ContractsScreen({
           </View>
         )}
 
-        {/* ADE Submission Reminder for fully signed contracts */}
-        {item.status === 'signed' && item.needsADESubmission && currentUser?.userType === 'homeowner' && (
-          <View style={styles.adeReminderContainer}>
-            <MaterialIcons name="notifications" size={20} color="#FF9800" />
-            <Text style={styles.adeReminderText}>
-              Contratto pronto per l'invio all'Agenzia delle Entrate
-            </Text>
-          </View>
-        )}
-
-        {/* ADE Registration Button for signed contracts */}
-        {item.status === 'signed' && currentUser?.userType === 'homeowner' && (
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity 
-              style={styles.spidButton}
-              onPress={() => handlePublishWithSPID(item)}
-            >
-              <MaterialIcons name="public" size={16} color="#fff" />
-              <Text style={styles.spidButtonText}>Pubblica con SPID</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.adeButton}
-              onPress={() => handlePublishToADE(item)}
-            >
-              <MaterialIcons name="account-balance" size={16} color="#fff" />
-              <Text style={styles.adeButtonText}>Registra ADE</Text>
-            </TouchableOpacity>
-          </View>
-        )}
         
         <MaterialIcons name="chevron-right" size={24} color="#CCC" style={styles.chevron} />
       </TouchableOpacity>
     );
   };
-
-  if (showSPIDAuth) {
-    return (
-      <SPIDAuthScreen
-        onAuthSuccess={handleSPIDAuthSuccess}
-        onBack={handleSPIDAuthBack}
-        purpose="contract"
-      />
-    );
-  }
 
   if (showContractPreview && selectedContract) {
     return (
@@ -429,17 +333,6 @@ export default function ContractsScreen({
         currentUser={currentUser}
         onClose={handleClosePreview}
         onDownloadPDF={handleDownloadPDF}
-      />
-    );
-  }
-
-  if (showADEIntegration && selectedContractForADE) {
-    return (
-      <ADEIntegrationScreen
-        contract={selectedContractForADE}
-        currentUser={currentUser}
-        onSuccess={handleADESuccess}
-        onBack={handleADEBack}
       />
     );
   }
@@ -559,9 +452,6 @@ const styles = StyleSheet.create({
   status_pending_review: {
     backgroundColor: '#FFF8E1',
   },
-  status_published_ade: {
-    backgroundColor: '#E8F5E9',
-  },
   status_signed_by_owner: {
     backgroundColor: '#FF9800',
   },
@@ -644,22 +534,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  spidButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    gap: 8,
-  },
-  spidButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   signingButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -712,42 +586,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  adeReminderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-  adeReminderText: {
-    color: '#E65100',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-    flex: 1,
-  },
   actionButtonsContainer: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 12,
-  },
-  adeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF9800',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  adeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
