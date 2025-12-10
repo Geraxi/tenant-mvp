@@ -30,6 +30,7 @@ const translations: Translations = {
   "action.save": { en: "Save", it: "Salva" },
   "action.saved": { en: "Saved", it: "Salvata" },
   "action.contact": { en: "Contact owner", it: "Contatta proprietario" },
+  "action.contactRoommate": { en: "Contact roommate", it: "Contatta coinquilino" },
   "action.addListing": { en: "Add listing", it: "Aggiungi annuncio" },
   "action.submit": { en: "Submit", it: "Invia" },
   "action.logout": { en: "Log out", it: "Esci" },

@@ -107,7 +107,7 @@ export default function TenantDetails() {
         </button>
         <Link href={`/chat/new?user=${id}`}>
           <a className="flex-1 bg-secondary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-secondary/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center">
-            {t("action.contact")}
+            {t("action.contactRoommate")}
           </a>
         </Link>
       </div>
