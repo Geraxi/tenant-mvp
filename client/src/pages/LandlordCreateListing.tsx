@@ -84,6 +84,11 @@ export default function LandlordCreateListing() {
                  <div className="absolute right-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm" />
                </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">{t("form.amenities")}</label>
+              <textarea className="w-full p-4 rounded-xl bg-white border border-gray-200 focus:border-primary outline-none transition-colors min-h-[80px]" placeholder="e.g. Balcony, Dishwasher, Elevator..." />
+            </div>
           </div>
 
           <button type="submit" className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all">

@@ -65,6 +65,7 @@ const translations: Translations = {
   "form.price": { en: "Price", it: "Prezzo" },
   "form.type": { en: "Property type", it: "Tipo di immobile" },
   "form.desc": { en: "Description", it: "Descrizione" },
+  "form.amenities": { en: "Other amenities", it: "Altri servizi" },
 };
 
 interface LanguageContextType {
