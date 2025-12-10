@@ -119,3 +119,39 @@ export const mockTenants: TenantProfile[] = [
     preferences: ["Balcony", "Pet friendly"]
   }
 ];
+
+export const mockRoommates: TenantProfile[] = [
+  {
+    id: "r1",
+    name: "Alessandro",
+    age: 24,
+    budget: 600,
+    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80",
+    bio: "Student at Politecnico. Looking for a single room. I'm chill and like to cook.",
+    occupation: "Student",
+    moveInDate: "Sept 1",
+    preferences: ["Student friendly", "Near Metro"]
+  },
+  {
+    id: "r2",
+    name: "Sara",
+    age: 27,
+    budget: 750,
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    bio: "Working professional. Looking for a double room in a shared apartment.",
+    occupation: "Architect",
+    moveInDate: "Oct 15",
+    preferences: ["Female only", "Balcony"]
+  },
+  {
+    id: "r3",
+    name: "Davide",
+    age: 29,
+    budget: 800,
+    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80",
+    bio: "Photographer. I travel a lot. Looking for a friendly environment.",
+    occupation: "Photographer",
+    moveInDate: "ASAP",
+    preferences: ["Flexible", "Artist friendly"]
+  }
+];

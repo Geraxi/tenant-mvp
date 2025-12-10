@@ -40,6 +40,10 @@ const translations: Translations = {
   "nav.matches": { en: "Matches", it: "Match" },
   "nav.profile": { en: "Profile", it: "Profilo" },
   "nav.listings": { en: "Listings", it: "Annunci" },
+
+  // Tenant Toggle
+  "tenant.toggle.homes": { en: "Homes", it: "Case" },
+  "tenant.toggle.roommates": { en: "Roommates", it: "Coinquilini" },
   
   // Property Details
   "prop.furnished": { en: "Furnished", it: "Arredata" },
@@ -50,6 +54,7 @@ const translations: Translations = {
   
   // Empty States
   "empty.noProperties": { en: "No more properties to show", it: "Nessun altro immobile da mostrare" },
+  "empty.noRoommates": { en: "No more roommates to show", it: "Nessun altro coinquilino da mostrare" },
   "empty.checkLater": { en: "Check back later!", it: "Torna più tardi!" },
   
   // Landlord Form
