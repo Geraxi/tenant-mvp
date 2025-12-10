@@ -1,23 +1,58 @@
 import { useLanguage } from "@/lib/i18n";
-import { mockRoommates, mockTenants } from "@/lib/mockData";
 import { useRoute, Link } from "wouter";
 import { ArrowLeft, Share2, Users, Calendar, Briefcase, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TenantDetails() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [, params] = useRoute("/tenant-details/:id");
   const id = params?.id;
-  
-  // Find in both lists
-  const tenant = [...mockTenants, ...mockRoommates].find(p => p.id === id);
-  
-  const [isSaved, setIsSaved] = useState(false);
   const [emblaRef] = useEmblaCarousel({ loop: true });
 
-  if (!tenant) return <div>Not found</div>;
+  const { data: tenant, isLoading } = useQuery({
+    queryKey: ["roommate", id],
+    queryFn: () => api.getRoommate(id!),
+    enabled: !!id,
+  });
+
+  const swipeMutation = useMutation({
+    mutationFn: () => api.swipe("roommate", id!, "like"),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Swipe sent successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send swipe",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLike = () => {
+    swipeMutation.mutate();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="text-center p-8">
+          <div className="w-12 h-12 border-4 border-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenant) return <div className="min-h-full bg-white flex items-center justify-center p-8">Profile not found</div>;
 
   return (
     <div className="min-h-full bg-white pb-24">
@@ -97,13 +132,14 @@ export default function TenantDetails() {
       {/* Footer Action */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex gap-4 items-center z-50 px-6 pb-8">
         <button 
-          onClick={() => setIsSaved(!isSaved)}
+          onClick={handleLike}
+          disabled={swipeMutation.isPending}
           className={cn(
-            "p-4 rounded-2xl border-2 transition-colors",
-            isSaved ? "border-secondary bg-secondary/5 text-secondary" : "border-gray-200 text-gray-400 hover:border-gray-300"
+            "p-4 rounded-2xl border-2 transition-colors border-secondary bg-secondary/5 text-secondary hover:bg-secondary/10",
+            swipeMutation.isPending && "opacity-50 cursor-not-allowed"
           )}
         >
-          <Heart fill={isSaved ? "currentColor" : "none"} />
+          <Heart fill="currentColor" />
         </button>
         <Link href={`/chat/new?user=${id}`}>
           <a className="flex-1 bg-secondary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-secondary/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center">

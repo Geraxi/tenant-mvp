@@ -4,16 +4,37 @@ import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "@assets/logo-removebg-preview_1765398497308.png";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
   const { t, language, setLanguage } = useLanguage();
   const [location, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Returning users go straight to Tenant home (mockup default)
-    setLocation("/tenant");
+    setLoading(true);
+    try {
+      const user = await api.login(email, password);
+      toast({
+        title: "Welcome back!",
+        description: `Logged in as ${user.name}`,
+      });
+      setLocation(`/${user.role}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,8 +70,11 @@ export default function Auth() {
             <label className="text-sm font-semibold text-gray-700 ml-1">{t("auth.email")}</label>
             <input 
               type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="hello@example.com"
               className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+              required
             />
           </div>
 
@@ -59,8 +83,11 @@ export default function Auth() {
             <div className="relative">
               <input 
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                required
               />
               <button 
                 type="button"
@@ -74,9 +101,10 @@ export default function Auth() {
 
           <button 
             type="submit"
-            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+            disabled={loading}
+            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 disabled:opacity-50"
           >
-            {t("auth.signIn")}
+            {loading ? "Signing in..." : t("auth.signIn")}
           </button>
         </form>
 

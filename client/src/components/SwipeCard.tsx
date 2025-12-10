@@ -3,12 +3,12 @@ import { X, Heart, MapPin, Euro } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
-import { Property, TenantProfile } from "@/lib/mockData";
+import { Property, Roommate } from "@shared/schema";
 
 import { Link, useLocation } from "wouter";
 
 interface SwipeCardProps {
-  data: Property | TenantProfile;
+  data: Property | Roommate;
   onSwipe: (direction: "left" | "right") => void;
   type: "property" | "tenant";
 }
@@ -44,7 +44,11 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
 
   const isProperty = type === "property";
   const propData = data as Property;
-  const tenantData = data as TenantProfile;
+  const tenantData = data as Roommate;
+
+  const imageUrl = data.images && data.images.length > 0 
+    ? data.images[0] 
+    : "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80";
 
   return (
     <motion.div
@@ -65,7 +69,7 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
         {/* Image */}
         <div className="absolute inset-0 bg-gray-200"> {/* Fallback background color */}
           <img 
-            src={data.image} 
+            src={imageUrl} 
             alt={isProperty ? propData.title : tenantData.name}
             className="w-full h-full object-cover pointer-events-none"
           />
@@ -108,7 +112,7 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
               </div>
               
               <div className="flex flex-wrap gap-2 mb-2">
-                {propData.bedrooms} {t("prop.beds")} • {propData.bathrooms} {t("prop.baths")}
+                {propData.beds} {t("prop.beds")} • {propData.baths} {t("prop.baths")}
                 {propData.furnished && <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-sm">{t("prop.furnished")}</span>}
               </div>
             </>

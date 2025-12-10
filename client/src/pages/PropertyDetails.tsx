@@ -1,31 +1,106 @@
 import { useLanguage } from "@/lib/i18n";
-import { mockProperties } from "@/lib/mockData";
 import { useRoute, Link } from "wouter";
 import { ArrowLeft, Heart, Share2, MapPin, Bed, Bath, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PropertyDetails() {
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [, params] = useRoute("/property/:id");
   const id = params?.id;
-  const property = mockProperties.find(p => p.id === id);
-  const [isSaved, setIsSaved] = useState(false);
   const [emblaRef] = useEmblaCarousel({ loop: true });
 
-  if (!property) return <div>Not found</div>;
+  const { data: property, isLoading } = useQuery({
+    queryKey: ["property", id],
+    queryFn: () => api.getProperty(id!),
+    enabled: !!id,
+  });
+
+  const { data: favoriteStatus } = useQuery({
+    queryKey: ["favorite", id],
+    queryFn: () => api.checkFavorite(id!),
+    enabled: !!id,
+  });
+
+  const addFavoriteMutation = useMutation({
+    mutationFn: () => api.addFavorite(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorite", id] });
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast({
+        title: "Added to favorites",
+        description: "Property saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add to favorites",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: () => api.removeFavorite(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorite", id] });
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast({
+        title: "Removed from favorites",
+        description: "Property removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove from favorites",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleFavorite = () => {
+    if (favoriteStatus?.isFavorited) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="text-center p-8">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading property...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!property) return <div className="min-h-full bg-white flex items-center justify-center p-8">Property not found</div>;
 
   return (
     <div className="min-h-full bg-white pb-24">
       {/* Header Image Carousel */}
       <div className="relative h-[50vh] bg-gray-100 overflow-hidden" ref={emblaRef}>
         <div className="flex h-full">
-          {property.images.map((src, index) => (
+          {property.images && property.images.length > 0 ? property.images.map((src, index) => (
             <div className="flex-[0_0_100%] min-w-0 relative" key={index}>
               <img src={src} alt={`${property.title} - ${index + 1}`} className="w-full h-full object-cover" />
             </div>
-          ))}
+          )) : (
+            <div className="flex-[0_0_100%] min-w-0 relative">
+              <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80" alt={property.title} className="w-full h-full object-cover" />
+            </div>
+          )}
         </div>
         
         {/* Nav overlay */}
@@ -43,11 +118,13 @@ export default function PropertyDetails() {
         </div>
 
         {/* Pagination Dots */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-          {property.images.map((_, i) => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-sm" />
-          ))}
-        </div>
+        {property.images && property.images.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+            {property.images.map((_, i) => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-sm" />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -72,11 +149,11 @@ export default function PropertyDetails() {
         <div className="flex gap-4 py-6 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 whitespace-nowrap">
             <Bed size={20} className="text-gray-400" />
-            <span className="font-semibold text-gray-700">{property.bedrooms} {t("prop.beds")}</span>
+            <span className="font-semibold text-gray-700">{property.beds} {t("prop.beds")}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 whitespace-nowrap">
             <Bath size={20} className="text-gray-400" />
-            <span className="font-semibold text-gray-700">{property.bathrooms} {t("prop.baths")}</span>
+            <span className="font-semibold text-gray-700">{property.baths} {t("prop.baths")}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 whitespace-nowrap">
              <Building2 size={20} className="text-gray-400" />
@@ -109,13 +186,15 @@ export default function PropertyDetails() {
       {/* Footer Action */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex gap-4 items-center z-50 px-6 pb-8">
         <button 
-          onClick={() => setIsSaved(!isSaved)}
+          onClick={handleToggleFavorite}
+          disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
           className={cn(
             "p-4 rounded-2xl border-2 transition-colors",
-            isSaved ? "border-primary bg-primary/5 text-primary" : "border-gray-200 text-gray-400 hover:border-gray-300"
+            favoriteStatus?.isFavorited ? "border-primary bg-primary/5 text-primary" : "border-gray-200 text-gray-400 hover:border-gray-300",
+            (addFavoriteMutation.isPending || removeFavoriteMutation.isPending) && "opacity-50 cursor-not-allowed"
           )}
         >
-          <Heart fill={isSaved ? "currentColor" : "none"} />
+          <Heart fill={favoriteStatus?.isFavorited ? "currentColor" : "none"} />
         </button>
         <Link href={`/chat/new?property=${id}`}>
           <a className="flex-1 bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center">

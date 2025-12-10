@@ -3,18 +3,55 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, User, Building2, Search, Heart, ShieldCheck, ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Onboarding() {
   const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleNext = () => {
     setStep(prev => prev + 1);
   };
 
-  const handleRoleSelect = (role: string) => {
-    setLocation(`/${role}`);
+  const handleRoleSelect = async (role: string) => {
+    if (!formData.name || !formData.email || !formData.password) {
+      toast({
+        title: "Missing information",
+        description: "Please provide your details first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.register({
+        ...formData,
+        role,
+      });
+      toast({
+        title: "Welcome!",
+        description: "Your account has been created successfully",
+      });
+      setLocation(`/${role}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,8 +64,8 @@ export default function Onboarding() {
       <div className="absolute top-0 left-0 right-0 h-1 bg-gray-100 z-50">
         <motion.div 
           className="h-full bg-primary"
-          initial={{ width: "33%" }}
-          animate={{ width: `${step * 33.33}%` }}
+          initial={{ width: "25%" }}
+          animate={{ width: `${step * 25}%` }}
         />
       </div>
 
@@ -119,6 +156,67 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col justify-center"
             >
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-black text-gray-900 mb-2">Create your account</h2>
+                <p className="text-gray-500">Just a few details to get started</p>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Name</label>
+                  <input 
+                    type="text" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Your name"
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="hello@example.com"
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Password</label>
+                  <input 
+                    type="password" 
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="••••••••"
+                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={handleNext}
+                disabled={!formData.name || !formData.email || !formData.password}
+                className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                Next <ArrowRight size={20} />
+              </button>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex-1 flex flex-col justify-center"
+            >
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black text-gray-900 mb-2">{t("role.title")}</h2>
                 <p className="text-gray-500">Select how you want to use Tenant</p>
@@ -128,8 +226,8 @@ export default function Onboarding() {
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleRoleSelect("tenant")}
-                  className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all relative overflow-hidden"
+                  onClick={() => !loading && handleRoleSelect("tenant")}
+                  className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all relative overflow-hidden disabled:opacity-50"
                 >
                   <div className="flex items-center gap-4 z-10 relative">
                     <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -146,8 +244,8 @@ export default function Onboarding() {
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleRoleSelect("landlord")}
-                  className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-secondary/50 hover:bg-secondary/5 cursor-pointer transition-all relative overflow-hidden"
+                  onClick={() => !loading && handleRoleSelect("landlord")}
+                  className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-secondary/50 hover:bg-secondary/5 cursor-pointer transition-all relative overflow-hidden disabled:opacity-50"
                 >
                   <div className="flex items-center gap-4 z-10 relative">
                     <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors">
