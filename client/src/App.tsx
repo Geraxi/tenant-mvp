@@ -18,6 +18,8 @@ import Matches from "@/pages/Matches";
 import Profile from "@/pages/Profile";
 import Chat from "@/pages/Chat";
 
+import TenantDetails from "@/pages/TenantDetails";
+
 function Router() {
   return (
     <Switch>
@@ -34,6 +36,7 @@ function Router() {
         {() => <Profile role="tenant" />}
       </Route>
       <Route path="/property/:id" component={PropertyDetails} />
+      <Route path="/tenant-details/:id" component={TenantDetails} />
 
       {/* Landlord Routes */}
       <Route path="/landlord" component={LandlordHome} />

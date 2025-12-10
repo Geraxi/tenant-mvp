@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 import { Property, TenantProfile } from "@/lib/mockData";
 
+import { Link, useLocation } from "wouter";
+
 interface SwipeCardProps {
   data: Property | TenantProfile;
   onSwipe: (direction: "left" | "right") => void;
@@ -13,6 +15,7 @@ interface SwipeCardProps {
 
 export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
   const [exitX, setExitX] = useState<number>(0);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
@@ -31,6 +34,14 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
     }
   };
 
+  const handleTap = () => {
+     if (type === "property") {
+       setLocation(`/property/${data.id}`);
+     } else {
+       setLocation(`/tenant-details/${data.id}`);
+     }
+  };
+
   const isProperty = type === "property";
   const propData = data as Property;
   const tenantData = data as TenantProfile;
@@ -41,6 +52,7 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
+      onTap={handleTap}
       className="absolute top-0 left-0 w-full h-full cursor-grab active:cursor-grabbing"
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, x: exitX }}

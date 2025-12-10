@@ -4,6 +4,7 @@ import { useRoute, Link } from "wouter";
 import { ArrowLeft, Heart, Share2, MapPin, Bed, Bath, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 
 export default function PropertyDetails() {
   const { t } = useLanguage();
@@ -11,27 +12,41 @@ export default function PropertyDetails() {
   const id = params?.id;
   const property = mockProperties.find(p => p.id === id);
   const [isSaved, setIsSaved] = useState(false);
+  const [emblaRef] = useEmblaCarousel({ loop: true });
 
   if (!property) return <div>Not found</div>;
 
   return (
     <div className="min-h-full bg-white pb-24">
-      {/* Header Image */}
-      <div className="relative h-[45vh]">
-        <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
+      {/* Header Image Carousel */}
+      <div className="relative h-[50vh] bg-gray-100 overflow-hidden" ref={emblaRef}>
+        <div className="flex h-full">
+          {property.images.map((src, index) => (
+            <div className="flex-[0_0_100%] min-w-0 relative" key={index}>
+              <img src={src} alt={`${property.title} - ${index + 1}`} className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
         
         {/* Nav overlay */}
-        <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top flex justify-between items-start bg-gradient-to-b from-black/50 to-transparent">
-          <Link href="/tenant/favorites">
-            <a className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors">
+        <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top flex justify-between items-start bg-gradient-to-b from-black/50 to-transparent pointer-events-none">
+          <Link href="/tenant">
+            <a className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors pointer-events-auto">
               <ArrowLeft size={24} />
             </a>
           </Link>
           <div className="flex gap-2">
-            <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors">
+            <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors pointer-events-auto">
               <Share2 size={24} />
             </button>
           </div>
+        </div>
+
+        {/* Pagination Dots */}
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+          {property.images.map((_, i) => (
+            <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow-sm" />
+          ))}
         </div>
       </div>
 
