@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider } from "@/lib/i18n";
 import { MobileFrame } from "@/components/MobileFrame";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 
 import Auth from "@/pages/Auth";
@@ -29,29 +30,45 @@ function Router() {
       <Route path="/onboarding" component={Onboarding} />
       
       {/* Tenant Routes */}
-      <Route path="/tenant" component={TenantHome} />
-      <Route path="/tenant/favorites" component={Favorites} />
+      <Route path="/tenant">
+        {() => <ProtectedRoute requiredRole="tenant"><TenantHome /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant/favorites">
+        {() => <ProtectedRoute requiredRole="tenant"><Favorites /></ProtectedRoute>}
+      </Route>
       <Route path="/tenant/matches">
-        {() => <Matches role="tenant" />}
+        {() => <ProtectedRoute requiredRole="tenant"><Matches role="tenant" /></ProtectedRoute>}
       </Route>
       <Route path="/tenant/profile">
-        {() => <Profile role="tenant" />}
+        {() => <ProtectedRoute requiredRole="tenant"><Profile role="tenant" /></ProtectedRoute>}
       </Route>
-      <Route path="/property/:id" component={PropertyDetails} />
-      <Route path="/tenant-details/:id" component={TenantDetails} />
+      <Route path="/property/:id">
+        {() => <ProtectedRoute><PropertyDetails /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant-details/:id">
+        {() => <ProtectedRoute><TenantDetails /></ProtectedRoute>}
+      </Route>
 
       {/* Landlord Routes */}
-      <Route path="/landlord" component={LandlordHome} />
-      <Route path="/landlord/listings" component={LandlordListings} />
-      <Route path="/landlord/create" component={LandlordCreateListing} />
+      <Route path="/landlord">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordHome /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/listings">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordListings /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/create">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordCreateListing /></ProtectedRoute>}
+      </Route>
       <Route path="/landlord/matches">
-        {() => <Matches role="landlord" />}
+        {() => <ProtectedRoute requiredRole="landlord"><Matches role="landlord" /></ProtectedRoute>}
       </Route>
       <Route path="/landlord/profile">
-        {() => <Profile role="landlord" />}
+        {() => <ProtectedRoute requiredRole="landlord"><Profile role="landlord" /></ProtectedRoute>}
       </Route>
 
-      <Route path="/chat/:id" component={Chat} />
+      <Route path="/chat/:id">
+        {() => <ProtectedRoute><Chat /></ProtectedRoute>}
+      </Route>
 
       <Route component={NotFound} />
     </Switch>

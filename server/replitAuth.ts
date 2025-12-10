@@ -27,6 +27,7 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  const isProduction = process.env.NODE_ENV === "production";
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -34,7 +35,8 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: isProduction,
+      sameSite: isProduction ? "lax" : "lax",
       maxAge: sessionTtl,
     },
   });
@@ -117,6 +119,7 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/logout", (req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
     const redirectUrl = client.buildEndSessionUrl(config, {
       client_id: process.env.REPL_ID!,
       post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
@@ -127,7 +130,12 @@ export async function setupAuth(app: Express) {
         if (err) {
           console.error("Error destroying session:", err);
         }
-        res.clearCookie("connect.sid");
+        res.clearCookie("connect.sid", {
+          path: "/",
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: "lax",
+        });
         res.redirect(redirectUrl);
       });
     });
