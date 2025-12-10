@@ -46,16 +46,19 @@ export function SwipeCard({ data, onSwipe, type }: SwipeCardProps) {
       animate={{ scale: 1, opacity: 1, x: exitX }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      <div className="relative w-full h-[65vh] rounded-3xl overflow-hidden shadow-xl bg-white select-none">
+      <div 
+        className="relative w-full h-[65vh] rounded-3xl overflow-hidden shadow-xl bg-white select-none"
+        style={{ backgroundColor: "white", transform: "translateZ(0)" }} // Force opaque background and hardware acceleration
+      >
         {/* Image */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gray-200"> {/* Fallback background color */}
           <img 
             src={data.image} 
             alt={isProperty ? propData.title : tenantData.name}
             className="w-full h-full object-cover pointer-events-none"
           />
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
         </div>
 
         {/* Status Badges (Like/Nope) */}
