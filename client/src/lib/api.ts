@@ -26,21 +26,7 @@ async function fetchApi(url: string, options?: RequestInit) {
 
 export const api = {
   // Auth
-  register: (data: { email: string; password: string; role: string; name: string }) =>
-    fetchApi('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  login: (email: string, password: string) =>
-    fetchApi('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
-
-  logout: () => fetchApi('/api/auth/logout', { method: 'POST' }),
-
-  getMe: (): Promise<User> => fetchApi('/api/auth/me'),
+  getMe: (): Promise<User> => fetchApi('/api/auth/user'),
 
   // Users
   updateUser: (id: string, updates: Partial<User>) =>

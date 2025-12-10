@@ -1,10 +1,8 @@
 import type { Express, Request, Response } from "express";
 import type { Server as HTTPServer } from "http";
-import { setupAuth, hashPassword } from "./auth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { storage } from "./storage";
-import passport from "passport";
 import {
-  insertUserSchema,
   insertPropertySchema,
   insertRoommateSchema,
   insertSwipeSchema,
@@ -15,85 +13,24 @@ export async function registerRoutes(
   server: HTTPServer,
   app: Express,
 ): Promise<void> {
-  setupAuth(app);
-
-  // Middleware to check if user is authenticated
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    next();
-  };
+  await setupAuth(app);
 
   // AUTH ROUTES
-  app.post("/api/auth/register", async (req, res, next) => {
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const result = insertUserSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Invalid user data", errors: result.error });
-      }
-
-      const existingUser = await storage.getUserByEmail(result.data.email);
-      if (existingUser) {
-        return res.status(400).json({ message: "Email already in use" });
-      }
-
-      const hashedPassword = await hashPassword(result.data.password);
-      const user = await storage.createUser({
-        ...result.data,
-        password: hashedPassword,
-      });
-
-      req.login({ id: user.id, email: user.email, role: user.role, name: user.name }, (err) => {
-        if (err) return next(err);
-        res.json({ 
-          id: user.id, 
-          email: user.email, 
-          role: user.role, 
-          name: user.name 
-        });
-      });
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: Express.User, info: any) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      }
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.json(user);
-      });
-    })(req, res, next);
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.logout(() => {
-      res.json({ message: "Logged out successfully" });
-    });
-  });
-
-  app.get("/api/auth/me", requireAuth, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user!.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
   // USER ROUTES
-  app.patch("/api/users/:id", requireAuth, async (req, res) => {
+  app.patch("/api/users/:id", isAuthenticated, async (req: any, res) => {
     try {
-      if (req.user!.id !== req.params.id) {
+      if (req.user.claims.sub !== req.params.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
@@ -102,24 +39,23 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
 
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      res.json(user);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
   // PROPERTY ROUTES
-  app.get("/api/properties", requireAuth, async (req, res) => {
+  app.get("/api/properties", isAuthenticated, async (req: any, res) => {
     try {
-      const properties = await storage.getPropertiesForTenant(req.user!.id);
+      const properties = await storage.getPropertiesForTenant(req.user.claims.sub);
       res.json(properties);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/properties/:id", requireAuth, async (req, res) => {
+  app.get("/api/properties/:id", isAuthenticated, async (req, res) => {
     try {
       const property = await storage.getProperty(req.params.id);
       if (!property) {
@@ -131,27 +67,29 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/landlord/properties", requireAuth, async (req, res) => {
+  app.get("/api/landlord/properties", isAuthenticated, async (req: any, res) => {
     try {
-      if (req.user!.role !== 'landlord') {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'landlord') {
         return res.status(403).json({ message: "Forbidden" });
       }
-      const properties = await storage.getPropertiesByLandlord(req.user!.id);
+      const properties = await storage.getPropertiesByLandlord(req.user.claims.sub);
       res.json(properties);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.post("/api/properties", requireAuth, async (req, res) => {
+  app.post("/api/properties", isAuthenticated, async (req: any, res) => {
     try {
-      if (req.user!.role !== 'landlord') {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'landlord') {
         return res.status(403).json({ message: "Forbidden" });
       }
 
       const result = insertPropertySchema.safeParse({
         ...req.body,
-        landlordId: req.user!.id,
+        landlordId: req.user.claims.sub,
       });
 
       if (!result.success) {
@@ -165,13 +103,13 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/properties/:id", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:id", isAuthenticated, async (req: any, res) => {
     try {
       const property = await storage.getProperty(req.params.id);
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
-      if (property.landlordId !== req.user!.id) {
+      if (property.landlordId !== req.user.claims.sub) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
@@ -182,13 +120,13 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/properties/:id", requireAuth, async (req, res) => {
+  app.delete("/api/properties/:id", isAuthenticated, async (req: any, res) => {
     try {
       const property = await storage.getProperty(req.params.id);
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
-      if (property.landlordId !== req.user!.id) {
+      if (property.landlordId !== req.user.claims.sub) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
@@ -200,16 +138,16 @@ export async function registerRoutes(
   });
 
   // ROOMMATE ROUTES
-  app.get("/api/roommates", requireAuth, async (req, res) => {
+  app.get("/api/roommates", isAuthenticated, async (req: any, res) => {
     try {
-      const roommates = await storage.getRoommatesForTenant(req.user!.id);
+      const roommates = await storage.getRoommatesForTenant(req.user.claims.sub);
       res.json(roommates);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/roommates/:id", requireAuth, async (req, res) => {
+  app.get("/api/roommates/:id", isAuthenticated, async (req, res) => {
     try {
       const roommate = await storage.getRoommate(req.params.id);
       if (!roommate) {
@@ -221,11 +159,11 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/roommates", requireAuth, async (req, res) => {
+  app.post("/api/roommates", isAuthenticated, async (req: any, res) => {
     try {
       const result = insertRoommateSchema.safeParse({
         ...req.body,
-        userId: req.user!.id,
+        userId: req.user.claims.sub,
       });
 
       if (!result.success) {
@@ -240,11 +178,11 @@ export async function registerRoutes(
   });
 
   // SWIPE ROUTES
-  app.post("/api/swipes", requireAuth, async (req, res) => {
+  app.post("/api/swipes", isAuthenticated, async (req: any, res) => {
     try {
       const result = insertSwipeSchema.safeParse({
         ...req.body,
-        userId: req.user!.id,
+        userId: req.user.claims.sub,
       });
 
       if (!result.success) {
@@ -253,18 +191,15 @@ export async function registerRoutes(
 
       const swipe = await storage.createSwipe(result.data);
 
-      // Check for match if it's a like on a roommate
       if (result.data.action === 'like' && result.data.targetType === 'roommate') {
         const roommate = await storage.getRoommate(result.data.targetId);
         if (roommate) {
-          // Check if the roommate's user also liked this user
-          const reverseSwipe = await storage.getSwipe(roommate.userId, req.user!.id, 'roommate');
+          const reverseSwipe = await storage.getSwipe(roommate.userId, req.user.claims.sub, 'roommate');
           if (reverseSwipe && reverseSwipe.action === 'like') {
-            // Create match if not already exists
-            const existingMatch = await storage.checkExistingMatch(req.user!.id, roommate.userId);
+            const existingMatch = await storage.checkExistingMatch(req.user.claims.sub, roommate.userId);
             if (!existingMatch) {
               await storage.createMatch({
-                user1Id: req.user!.id,
+                user1Id: req.user.claims.sub,
                 user2Id: roommate.userId,
                 relatedType: 'roommate',
                 relatedId: result.data.targetId,
@@ -282,9 +217,9 @@ export async function registerRoutes(
   });
 
   // MATCH ROUTES
-  app.get("/api/matches", requireAuth, async (req, res) => {
+  app.get("/api/matches", isAuthenticated, async (req: any, res) => {
     try {
-      const matches = await storage.getUserMatches(req.user!.id);
+      const matches = await storage.getUserMatches(req.user.claims.sub);
       res.json(matches);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -292,11 +227,10 @@ export async function registerRoutes(
   });
 
   // FAVORITE ROUTES
-  app.get("/api/favorites", requireAuth, async (req, res) => {
+  app.get("/api/favorites", isAuthenticated, async (req: any, res) => {
     try {
-      const favorites = await storage.getUserFavorites(req.user!.id);
+      const favorites = await storage.getUserFavorites(req.user.claims.sub);
       
-      // Fetch full property details for each favorite
       const propertiesPromises = favorites.map(f => storage.getProperty(f.propertyId));
       const properties = await Promise.all(propertiesPromises);
       
@@ -306,11 +240,11 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/favorites", requireAuth, async (req, res) => {
+  app.post("/api/favorites", isAuthenticated, async (req: any, res) => {
     try {
       const result = insertFavoriteSchema.safeParse({
         ...req.body,
-        userId: req.user!.id,
+        userId: req.user.claims.sub,
       });
 
       if (!result.success) {
@@ -324,18 +258,18 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/favorites/:propertyId", requireAuth, async (req, res) => {
+  app.delete("/api/favorites/:propertyId", isAuthenticated, async (req: any, res) => {
     try {
-      await storage.removeFavorite(req.user!.id, req.params.propertyId);
+      await storage.removeFavorite(req.user.claims.sub, req.params.propertyId);
       res.json({ message: "Favorite removed" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/favorites/:propertyId/check", requireAuth, async (req, res) => {
+  app.get("/api/favorites/:propertyId/check", isAuthenticated, async (req: any, res) => {
     try {
-      const isFavorited = await storage.isFavorited(req.user!.id, req.params.propertyId);
+      const isFavorited = await storage.isFavorited(req.user.claims.sub, req.params.propertyId);
       res.json({ isFavorited });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

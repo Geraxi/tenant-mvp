@@ -1,39 +1,20 @@
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
-import { Link, useLocation } from "wouter";
-import { Settings, LogOut, Globe, Shield, HelpCircle, ChevronRight, User, RefreshCcw } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { Settings, LogOut, Globe, Shield, HelpCircle, ChevronRight, RefreshCcw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const { t, language, setLanguage } = useLanguage();
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  const { user, logout } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ["me"],
-    queryFn: api.getMe,
-  });
-
-  const logoutMutation = useMutation({
-    mutationFn: api.logout,
-    onSuccess: () => {
-      queryClient.clear();
-      setLocation("/");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to logout",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleLogout = () => {
-    logoutMutation.mutate();
+    queryClient.clear();
+    logout();
+    window.location.href = "/api/logout";
   };
 
   const switchRole = () => {
@@ -49,19 +30,21 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
         {/* Profile Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-24 h-24 rounded-full bg-gray-200 mb-4 border-4 border-white shadow-md overflow-hidden relative">
-            {user?.images && user.images.length > 0 ? (
-              <img src={user.images[0]} alt={user.name} className="w-full h-full object-cover" />
+            {user?.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt={user.name || 'User'} className="w-full h-full object-cover" data-testid="img-profile" />
+            ) : user?.images && user.images.length > 0 ? (
+              <img src={user.images[0]} alt={user.name || 'User'} className="w-full h-full object-cover" data-testid="img-profile" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold" data-testid="text-profile-initial">
+                {user?.name?.charAt(0)?.toUpperCase() || user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
               </div>
             )}
             <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center border-2 border-white">
               <Settings size={14} />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">{user?.name || 'User'}</h2>
-          <p className="text-gray-500 font-medium">{role === "tenant" ? "Tenant" : "Landlord"} {user?.city ? `• ${user.city}` : ''}</p>
+          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-username">{user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'}</h2>
+          <p className="text-gray-500 font-medium" data-testid="text-role">{role === "tenant" ? "Tenant" : "Landlord"} {user?.city ? `• ${user.city}` : ''}</p>
         </div>
 
         {/* Menu */}
@@ -117,11 +100,11 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
 
         <button 
           onClick={handleLogout}
-          disabled={logoutMutation.isPending}
-          className="w-full p-4 rounded-2xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full p-4 rounded-2xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+          data-testid="button-logout"
         >
           <LogOut size={20} />
-          {logoutMutation.isPending ? "Logging out..." : t("action.logout")}
+          {t("action.logout")}
         </button>
 
       </main>

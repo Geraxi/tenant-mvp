@@ -1,52 +1,44 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
 import logo from "@assets/logo-removebg-preview_1765398497308.png";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const { t, language, setLanguage } = useLanguage();
-  const [location, setLocation] = useLocation();
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const user = await api.login(email, password);
-      toast({
-        title: "Welcome back!",
-        description: `Logged in as ${user.name}`,
-      });
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.role) {
       setLocation(`/${user.role}`);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Invalid email or password",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    } else if (!isLoading && isAuthenticated && !user?.role) {
+      setLocation("/onboarding");
     }
+  }, [isLoading, isAuthenticated, user, setLocation]);
+
+  const handleLogin = () => {
+    window.location.href = "/api/login";
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Decor */}
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-secondary/10 rounded-full blur-3xl" />
 
-      {/* Language Toggle */}
       <button 
         onClick={() => setLanguage(language === "en" ? "it" : "en")}
         className="absolute top-6 right-6 font-bold text-sm bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors"
+        data-testid="button-language-toggle"
       >
         {language.toUpperCase()}
       </button>
@@ -57,71 +49,31 @@ export default function Auth() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm flex flex-col gap-8 z-10"
       >
-        {/* Logo */}
         <div className="text-center space-y-2 flex flex-col items-center">
-          <img src={logo} alt="Tenant Logo" className="w-24 h-24 object-contain mb-2" />
+          <img src={logo} alt="Tenant Logo" className="w-24 h-24 object-contain mb-2" data-testid="img-logo" />
           <h1 className="text-5xl font-black text-primary tracking-tight">{t("app.name")}</h1>
           <p className="text-lg text-gray-500 font-medium">{t("app.tagline")}</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 ml-1">{t("auth.email")}</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="hello@example.com"
-              className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 ml-1">{t("auth.password")}</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-                required
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
+        <div className="space-y-4">
           <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 disabled:opacity-50"
+            onClick={handleLogin}
+            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+            data-testid="button-login"
           >
-            {loading ? "Signing in..." : t("auth.signIn")}
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+            {t("auth.signIn")}
           </button>
-        </form>
 
-        {/* Footer */}
-        <div className="text-center space-y-4">
-          <Link href="/onboarding" className="text-primary font-bold hover:underline block">
-            {t("auth.createAccount")}
-          </Link>
-          
-          <div className="flex items-center gap-4 justify-center pt-4">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-              <span className="font-bold text-gray-600">G</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-              <span className="font-bold text-gray-600"></span>
-            </div>
-          </div>
+          <p className="text-center text-gray-500 text-sm">
+            {t("auth.createAccount") || "Sign in with Google, GitHub, Apple, or email"}
+          </p>
+        </div>
+
+        <div className="text-center text-xs text-gray-400 mt-4">
+          {t("auth.termsNotice") || "By signing in, you agree to our Terms of Service and Privacy Policy"}
         </div>
       </motion.div>
     </div>

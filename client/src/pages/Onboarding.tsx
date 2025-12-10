@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, User, Building2, Search, Heart, ShieldCheck, ArrowRight, MapPin, Euro, Calendar, Users, Home, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 
 export default function Onboarding() {
   const { t } = useLanguage();
@@ -14,11 +15,10 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    password: "",
     role: "" as "tenant" | "landlord" | "",
     city: "",
     age: "",
@@ -27,6 +27,31 @@ export default function Onboarding() {
     budget: "",
     lookingFor: "homes" as "homes" | "roommates",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || prev.name,
+      }));
+    }
+  }, [user]);
+
+  if (!isLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-full bg-white flex flex-col items-center justify-center p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Please sign in first</h2>
+        <p className="text-gray-500 mb-6">You need to be logged in to complete onboarding</p>
+        <button 
+          onClick={() => window.location.href = "/api/login"}
+          className="bg-primary text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-lg"
+          data-testid="button-login-onboarding"
+        >
+          Sign In
+        </button>
+      </div>
+    );
+  }
 
   const handleNext = () => {
     setStep(prev => prev + 1);
@@ -42,7 +67,7 @@ export default function Onboarding() {
   };
 
   const handleComplete = async () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.role) {
+    if (!formData.name || !formData.role || !user) {
       toast({
         title: "Missing information",
         description: "Please complete all required fields",
@@ -53,17 +78,9 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      await api.register({
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
+      await api.updateUser(user.id, {
         name: formData.name,
-      });
-
-      const me = await api.getMe();
-      
-      // Update additional profile info
-      await api.updateUser(me.id, {
+        role: formData.role,
         city: formData.city || undefined,
         age: formData.age ? parseInt(formData.age) : undefined,
         occupation: formData.occupation || undefined,
@@ -71,7 +88,6 @@ export default function Onboarding() {
         budget: formData.budget ? parseInt(formData.budget) : undefined,
       });
 
-      // For tenants looking for roommates, create a roommate profile
       if (formData.role === "tenant" && formData.lookingFor === "roommates") {
         await api.createRoommate({
           name: formData.name,
@@ -79,28 +95,35 @@ export default function Onboarding() {
           occupation: formData.occupation || "Professional",
           bio: formData.bio || `Hi! I'm ${formData.name} and I'm looking for a roommate.`,
           budget: formData.budget ? parseInt(formData.budget) : 800,
-          city: formData.city || "Milano",
           moveInDate: "Flexible",
           preferences: ["Non-smoker", "Clean"],
-          images: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"],
+          images: [user.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"],
         });
       }
 
       toast({
         title: "Welcome to Tenant!",
-        description: "Your account has been created successfully",
+        description: "Your profile has been created successfully",
       });
       setLocation(`/${formData.role}`);
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const progressPercentage = (step / TOTAL_STEPS) * 100;
 
@@ -201,67 +224,8 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* Step 3: Account Details */}
+          {/* Step 3: Role Selection */}
           {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="flex-1 flex flex-col"
-            >
-              <div className="mb-8">
-                <h2 className="text-2xl font-black text-gray-900 mb-2">Create your account</h2>
-                <p className="text-gray-500">Let's start with the basics</p>
-              </div>
-
-              <div className="space-y-4 flex-1">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Your name</label>
-                  <input 
-                    type="text" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="John Doe"
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Email address</label>
-                  <input 
-                    type="email" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="hello@example.com"
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Create a password</label>
-                  <input 
-                    type="password" 
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="••••••••"
-                    className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
-                  />
-                </div>
-              </div>
-
-              <button 
-                onClick={handleNext}
-                disabled={!formData.name || !formData.email || !formData.password}
-                className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none"
-              >
-                Continue <ArrowRight size={20} />
-              </button>
-            </motion.div>
-          )}
-
-          {/* Step 4: Role Selection */}
-          {step === 4 && (
             <motion.div
               key="step4"
               initial={{ opacity: 0, x: 20 }}
@@ -326,10 +290,10 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* Step 5: Role-specific questions */}
-          {step === 5 && (
+          {/* Step 4: Role-specific questions */}
+          {step === 4 && (
             <motion.div
-              key="step5"
+              key="step4b"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -470,10 +434,10 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* Step 6: Confirmation */}
-          {step === 6 && (
+          {/* Step 5: Confirmation */}
+          {step === 5 && (
             <motion.div
-              key="step6"
+              key="step5"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -497,12 +461,16 @@ export default function Onboarding() {
 
               <div className="bg-gray-50 rounded-2xl p-6 w-full mb-8">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-                    {formData.name.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.profileImageUrl ? (
+                    <img src={user.profileImageUrl} alt={formData.name} className="w-12 h-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                      {formData.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="text-left">
                     <h3 className="font-bold text-gray-900">{formData.name}</h3>
-                    <p className="text-sm text-gray-500">{formData.email}</p>
+                    <p className="text-sm text-gray-500">{user?.email || ''}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -533,7 +501,7 @@ export default function Onboarding() {
                     : "bg-secondary text-white shadow-secondary/30"
                 }`}
               >
-                {loading ? "Creating account..." : (formData.role === "tenant" ? "Start Swiping" : "Add Your First Listing")}
+                {loading ? "Setting up your profile..." : (formData.role === "tenant" ? "Start Swiping" : "Add Your First Listing")}
                 <ArrowRight size={20} />
               </button>
             </motion.div>
