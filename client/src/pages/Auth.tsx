@@ -12,7 +12,8 @@ export default function Auth() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setLocation("/role");
+    // Returning users go straight to Tenant home (mockup default)
+    setLocation("/tenant");
   };
 
   return (
@@ -81,9 +82,11 @@ export default function Auth() {
 
         {/* Footer */}
         <div className="text-center space-y-4">
-          <a href="#" className="text-primary font-bold hover:underline">
-            {t("auth.createAccount")}
-          </a>
+          <Link href="/onboarding">
+            <a className="text-primary font-bold hover:underline block">
+              {t("auth.createAccount")}
+            </a>
+          </Link>
           
           <div className="flex items-center gap-4 justify-center pt-4">
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
