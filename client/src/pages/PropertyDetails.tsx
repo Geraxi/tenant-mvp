@@ -15,7 +15,7 @@ export default function PropertyDetails() {
   if (!property) return <div>Not found</div>;
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-full bg-white pb-24">
       {/* Header Image */}
       <div className="relative h-[45vh]">
         <img src={property.image} alt={property.title} className="w-full h-full object-cover" />

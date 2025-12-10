@@ -16,7 +16,7 @@ export default function LandlordCreateListing() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-full bg-gray-50 pb-24">
       <header className="fixed top-0 left-0 right-0 h-14 bg-white z-40 flex items-center px-4 border-b border-gray-100">
         <Link href="/landlord/listings">
           <a className="p-2 text-gray-600 hover:text-gray-900">

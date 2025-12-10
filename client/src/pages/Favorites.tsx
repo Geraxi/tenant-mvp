@@ -10,7 +10,7 @@ export default function Favorites() {
   const favorites = mockProperties.slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-full bg-gray-50 pb-20">
       <TopBar title={t("nav.favorites")} />
 
       <main className="pt-20 px-4 max-w-md mx-auto">

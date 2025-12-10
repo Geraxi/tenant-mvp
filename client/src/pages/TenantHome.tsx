@@ -22,7 +22,7 @@ export default function TenantHome() {
   const activeProperty = properties[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-full bg-gray-50 pb-20">
       <TopBar actionIcon={Filter} onAction={() => console.log("Filter")} />
 
       <main className="h-[calc(100vh-140px)] w-full max-w-md mx-auto pt-20 px-4 flex flex-col items-center justify-center relative">

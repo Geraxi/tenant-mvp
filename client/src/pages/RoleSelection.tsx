@@ -7,7 +7,7 @@ export default function RoleSelection() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-white p-6 flex flex-col">
+    <div className="min-h-full bg-white p-6 flex flex-col">
       <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full gap-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

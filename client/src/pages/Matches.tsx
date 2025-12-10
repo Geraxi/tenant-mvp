@@ -12,7 +12,7 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-full bg-gray-50 pb-20">
       <TopBar title={t("nav.matches")} />
 
       <main className="pt-20 px-4 max-w-md mx-auto">
