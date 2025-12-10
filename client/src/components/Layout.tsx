@@ -2,6 +2,7 @@ import { Home, Heart, MessageCircle, User, Building, ListPlus } from "lucide-rea
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import logo from "@assets/logo-removebg-preview_1765398497308.png";
 
 export function BottomNav({ role }: { role: "tenant" | "landlord" }) {
   const [location] = useLocation();
@@ -50,7 +51,14 @@ export function TopBar({ title, actionIcon: ActionIcon, onAction }: { title?: st
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md z-40 flex items-center justify-between px-4 border-b border-gray-50">
       <div className="w-10"></div> {/* Spacer for balance */}
-      <h1 className="text-lg font-bold text-gray-900">{title || t("app.name")}</h1>
+      {title ? (
+        <h1 className="text-lg font-bold text-gray-900">{title}</h1>
+      ) : (
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Tenant Logo" className="w-8 h-8 object-contain" />
+          <h1 className="text-lg font-bold text-gray-900">{t("app.name")}</h1>
+        </div>
+      )}
       <div className="w-10 flex justify-end">
         {ActionIcon && (
           <button onClick={onAction} className="p-2 text-gray-600 hover:text-primary transition-colors">

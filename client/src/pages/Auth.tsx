@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import logo from "@assets/logo-removebg-preview_1765398497308.png";
 
 export default function Auth() {
   const { t, language, setLanguage } = useLanguage();
@@ -35,7 +36,8 @@ export default function Auth() {
         className="w-full max-w-sm flex flex-col gap-8 z-10"
       >
         {/* Logo */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 flex flex-col items-center">
+          <img src={logo} alt="Tenant Logo" className="w-24 h-24 object-contain mb-2" />
           <h1 className="text-5xl font-black text-primary tracking-tight">{t("app.name")}</h1>
           <p className="text-lg text-gray-500 font-medium">{t("app.tagline")}</p>
         </div>
