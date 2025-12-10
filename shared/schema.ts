@@ -1,14 +1,27 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").notNull(), // 'tenant' or 'landlord'
-  name: text("name").notNull(),
+  email: text("email").unique(),
+  role: text("role"), // 'tenant' or 'landlord' - set after first login
+  name: text("name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
   age: integer("age"),
   city: text("city"),
   occupation: text("occupation"),
@@ -16,6 +29,7 @@ export const users = pgTable("users", {
   budget: integer("budget"),
   images: text("images").array(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const properties = pgTable("properties", {
@@ -79,6 +93,7 @@ export const favorites = pgTable("favorites", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
@@ -108,6 +123,7 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
