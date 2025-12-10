@@ -110,10 +110,8 @@ export default function Auth() {
 
         {/* Footer */}
         <div className="text-center space-y-4">
-          <Link href="/onboarding">
-            <a className="text-primary font-bold hover:underline block">
-              {t("auth.createAccount")}
-            </a>
+          <Link href="/onboarding" className="text-primary font-bold hover:underline block">
+            {t("auth.createAccount")}
           </Link>
           
           <div className="flex items-center gap-4 justify-center pt-4">

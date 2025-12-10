@@ -1,5 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
-import { useRoute, Link } from "wouter";
+import { useRoute } from "wouter";
 import { ArrowLeft, Send, Phone, MoreVertical } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
@@ -38,12 +38,9 @@ export default function Chat() {
     <div className="min-h-full bg-white flex flex-col">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center px-4 z-50">
-        <Link href="/tenant/matches"> 
-        {/* Note: In a real app we'd know if we came from tenant or landlord matches. For now, default back to one or use history.back */}
-          <a className="p-2 -ml-2 text-gray-600 hover:text-gray-900" onClick={() => window.history.back()}>
-            <ArrowLeft size={24} />
-          </a>
-        </Link>
+        <button className="p-2 -ml-2 text-gray-600 hover:text-gray-900" onClick={() => window.history.back()}>
+          <ArrowLeft size={24} />
+        </button>
         <div className="ml-2 flex items-center gap-3 flex-1">
           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
             <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" className="w-full h-full object-cover" />

@@ -61,11 +61,9 @@ export default function LandlordListings() {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No properties yet</h3>
             <p className="text-gray-500">Create your first listing to get started!</p>
-            <Link href="/landlord/create">
-              <a className="mt-6 inline-block bg-primary text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl transition-all">
-                Create Listing
-              </a>
-            </Link>
+            <Link href="/landlord/create" className="mt-6 inline-block bg-primary text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl transition-all">
+            Create Listing
+          </Link>
           </div>
         ) : (
           listings.map((prop) => (
@@ -110,10 +108,8 @@ export default function LandlordListings() {
       </main>
 
       {/* Floating Action Button (Alternative to TopBar action) */}
-      <Link href="/landlord/create">
-        <a className="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40">
-          <Plus size={28} />
-        </a>
+      <Link href="/landlord/create" className="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40">
+        <Plus size={28} />
       </Link>
 
       <BottomNav role="landlord" />

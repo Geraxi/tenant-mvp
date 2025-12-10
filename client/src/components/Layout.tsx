@@ -30,14 +30,12 @@ export function BottomNav({ role }: { role: "tenant" | "landlord" }) {
         {links.map((link) => {
           const isActive = location === link.href;
           return (
-            <Link key={link.href} href={link.href}>
-              <a className={cn(
-                "flex flex-col items-center gap-1 p-2 transition-colors duration-200",
-                isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
-              )}>
-                <link.icon className={cn("w-6 h-6", isActive && "fill-current")} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[10px] font-medium">{link.label}</span>
-              </a>
+            <Link key={link.href} href={link.href} className={cn(
+              "flex flex-col items-center gap-1 p-2 transition-colors duration-200",
+              isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+            )}>
+              <link.icon className={cn("w-6 h-6", isActive && "fill-current")} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="text-[10px] font-medium">{link.label}</span>
             </Link>
           );
         })}

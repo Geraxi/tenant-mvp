@@ -53,13 +53,12 @@ export default function LandlordCreateListing() {
       city: formData.city,
       area: formData.area || formData.city,
       price: parseInt(formData.price),
-      bedrooms: formData.bedrooms,
-      bathrooms: formData.bathrooms,
+      beds: formData.bedrooms,
+      baths: formData.bathrooms,
       type: formData.type,
       description: formData.description,
       furnished: formData.furnished,
       pets: formData.pets,
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
       images: [
         "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
         "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80"
@@ -72,10 +71,8 @@ export default function LandlordCreateListing() {
   return (
     <div className="min-h-full bg-gray-50 pb-24">
       <header className="fixed top-0 left-0 right-0 h-14 bg-white z-40 flex items-center px-4 border-b border-gray-100">
-        <Link href="/landlord/listings">
-          <a className="p-2 text-gray-600 hover:text-gray-900">
-            <ArrowLeft size={24} />
-          </a>
+        <Link href="/landlord/listings" className="p-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={24} />
         </Link>
         <h1 className="ml-2 text-lg font-bold text-gray-900">{t("action.addListing")}</h1>
       </header>

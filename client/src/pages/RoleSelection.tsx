@@ -19,11 +19,11 @@ export default function RoleSelection() {
         </motion.div>
 
         <div className="grid gap-4">
-          <Link href="/tenant">
-            <motion.a 
+          <Link href="/tenant" className="block">
+            <motion.div 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all relative overflow-hidden"
+              className="group p-6 rounded-3xl border-2 border-gray-100 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all relative overflow-hidden"
             >
               <div className="flex items-center gap-4 z-10 relative">
                 <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
@@ -35,14 +35,14 @@ export default function RoleSelection() {
                 </div>
                 <ChevronRight className="text-gray-300 group-hover:text-primary transition-colors" />
               </div>
-            </motion.a>
+            </motion.div>
           </Link>
 
-          <Link href="/landlord">
-            <motion.a 
+          <Link href="/landlord" className="block">
+            <motion.div 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="group block p-6 rounded-3xl border-2 border-gray-100 hover:border-secondary/50 hover:bg-secondary/5 cursor-pointer transition-all relative overflow-hidden"
+              className="group p-6 rounded-3xl border-2 border-gray-100 hover:border-secondary/50 hover:bg-secondary/5 cursor-pointer transition-all relative overflow-hidden"
             >
               <div className="flex items-center gap-4 z-10 relative">
                 <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors">
@@ -54,7 +54,7 @@ export default function RoleSelection() {
                 </div>
                 <ChevronRight className="text-gray-300 group-hover:text-secondary transition-colors" />
               </div>
-            </motion.a>
+            </motion.div>
           </Link>
         </div>
       </div>

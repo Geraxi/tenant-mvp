@@ -34,26 +34,24 @@ export default function Favorites() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {favorites.map((prop) => (
-              <Link key={prop.id} href={`/property/${prop.id}`}>
-                <a className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
-                  <div className="aspect-[4/5] relative">
-                    <img 
-                      src={prop.images && prop.images.length > 0 ? prop.images[0] : "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"} 
-                      alt={prop.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold shadow-sm">
-                      €{prop.price}
-                    </div>
+              <Link key={prop.id} href={`/property/${prop.id}`} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group block">
+                <div className="aspect-[4/5] relative">
+                  <img 
+                    src={prop.images && prop.images.length > 0 ? prop.images[0] : "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80"} 
+                    alt={prop.title} 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold shadow-sm">
+                    €{prop.price}
                   </div>
-                  <div className="p-3">
-                    <h3 className="font-bold text-gray-900 truncate">{prop.title}</h3>
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                      <MapPin size={12} />
-                      <span className="truncate">{prop.city}</span>
-                    </div>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-bold text-gray-900 truncate">{prop.title}</h3>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                    <MapPin size={12} />
+                    <span className="truncate">{prop.city}</span>
                   </div>
-                </a>
+                </div>
               </Link>
             ))}
           </div>

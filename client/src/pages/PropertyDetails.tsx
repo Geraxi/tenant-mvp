@@ -105,10 +105,8 @@ export default function PropertyDetails() {
         
         {/* Nav overlay */}
         <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top flex justify-between items-start bg-gradient-to-b from-black/50 to-transparent pointer-events-none">
-          <Link href="/tenant">
-            <a className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors pointer-events-auto">
-              <ArrowLeft size={24} />
-            </a>
+          <Link href="/tenant" className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors pointer-events-auto">
+            <ArrowLeft size={24} />
           </Link>
           <div className="flex gap-2">
             <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors pointer-events-auto">
@@ -196,10 +194,8 @@ export default function PropertyDetails() {
         >
           <Heart fill={favoriteStatus?.isFavorited ? "currentColor" : "none"} />
         </button>
-        <Link href={`/chat/new?property=${id}`}>
-          <a className="flex-1 bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center">
-            {t("action.contact")}
-          </a>
+        <Link href={`/chat/new?property=${id}`} className="flex-1 bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center">
+          {t("action.contact")}
         </Link>
       </div>
     </div>
