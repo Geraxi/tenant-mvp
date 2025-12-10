@@ -1,0 +1,168 @@
+You are a senior product designer and UI engineer.
+Design the complete UI/UX for a mobile app called “Tenant”, a bilingual Tinder-style renting app.
+Goal:
+A clean, modern, native-feeling mobile UI (iOS & Android)
+Following Apple Human Interface Guidelines
+Easy to implement in React Native / Expo later
+All screens designed with good proportions, spacing, and safe-area awareness
+Support for English and Italian text in all user facing strings
+1. Brand & Design System
+Create a small design system first:
+Brand name: Tenant
+Tagline EN: “Find homes with a swipe”
+Tagline IT: “Trova casa con uno swipe”
+Colors (example, feel free to refine):
+Primary: a modern blue suitable for housing/apps
+Secondary: a softer accent (purple or teal)
+Neutrals: proper gray scale for backgrounds, borders, text
+Error: red
+Success: green
+Typography:
+Use a clean, rounded sans-serif suited for mobile (e.g. SF Pro style)
+Sizes:
+H1: 28–32
+H2: 22–24
+Body: 16
+Caption: 12–14
+Spacing & layout rules:
+Use an 8-point grid (8, 16, 24, 32, etc.)
+Respect safe areas at the top and bottom
+Minimum tap target height: 44pt
+No overlapping elements
+Components to define:
+Primary button
+Secondary button
+Text input (with label and error state)
+Pill tag (for “Furnished”, “Pets allowed”, price, etc.)
+Card component for properties
+Card component for tenant profiles
+Top navigation header
+Bottom navigation tabs (where needed)
+Provide a short summary of these in a “design system” section first.
+2. Overall App Structure
+The app has two roles:
+Tenant (Inquilino) – swipes on properties
+Landlord (Proprietario) – creates listings and swipes on tenants
+Design the following screens with proper hierarchy, spacing, and safe-areas:
+Auth & onboarding
+Tenant experience
+Landlord experience
+Matches & messaging / contact
+Settings & language switch
+For each screen, describe:
+Layout
+Key components used
+How it looks on a 6.1” iPhone style device
+3. Screens – Detailed Design
+3.1. Welcome / Login / Signup
+Full-screen gradient or solid primary background
+Centered app name Tenant, tagline beneath
+Email + password fields with large rounded inputs
+Primary button: “Sign In” / “Accedi”
+Secondary text link: “Create an account” / “Crea un account”
+Optional social buttons (Google, Apple) with icons
+At the top-right or in a small footer, a language toggle (EN / IT)
+Everything vertically centered on most screens, scrollable on smaller ones
+3.2. Role Selection
+After signup, show a simple screen:
+Title: “Choose your role” / “Scegli il tuo ruolo”
+Two large cards or buttons:
+Tenant (Inquilino) – with a small icon of a person/home
+Landlord (Proprietario) – with a building/keys icon
+Clear selection state and a primary “Continue” button
+3.3. Tenant Home – Swipe on Properties
+Top app bar with app name or logo, and a small filter icon
+Centered property card with:
+Top: main property photo
+Overlaid price badge in top-right
+Below photo: title, city/area, short description
+Pill tags: “Furnished”, “Pets allowed”, “2 beds”, etc.
+Below the card: a row of two main buttons (or swipe gestures):
+❌ Skip (gray outlined circle)
+❤️ Like (primary filled circle)
+Card must respect margins and never touch edges; add subtle shadow and rounded corners
+When no more properties: show an empty state illustration + message
+Include the bilingual labels:
+Like / Mi piace
+Skip / Salta
+3.4. Tenant – Favorites Screen
+List/grid of saved properties
+Each item uses a smaller version of the property card
+Tapping opens Property Details
+3.5. Property Details
+Large image carousel at top
+Title + price + city
+Detail rows: bedrooms, bathrooms, type, furnished, pets
+Description text area
+Primary action:
+If not yet liked: “Save” / “Salva”
+If liked: “Saved” / “Salvata” (with a filled heart)
+If there is a match with the landlord: a prominent button:
+“Contact owner” / “Contatta proprietario”
+Design this with generous spacing and readable text.
+3.6. Landlord – My Listings
+Simple list of landlord’s properties
+Each row: small image, title, city, price, status
+Floating action button or top-right button “Add listing” / “Aggiungi annuncio”
+3.7. Landlord – Create / Edit Listing
+Scrollable form with labeled inputs:
+Title / Titolo
+City / Città
+Area / Zona
+Monthly rent / Affitto mensile
+Property type / Tipo di immobile
+Bedrooms / Camere
+Bathrooms / Bagni
+Furnished (toggle) / Arredata
+Pets allowed (toggle) / Animali ammessi
+Description / Descrizione
+Image picker area
+Primary submit button fixed at bottom with safe area padding
+3.8. Landlord – Swipe on Tenants
+A mirror of the tenant swipe UI, but with tenant profile cards:
+Photo/avatar
+Name, age (optional)
+Budget range (Budget)
+Preferred areas
+Move-in date
+Short bio
+Pill tags for preferences (no pets, student, worker, etc.)
+Same Like / Skip buttons at the bottom
+3.9. Matches Screen
+Tab/list of matches for the logged-in user
+Each row:
+Avatar / property thumbnail
+Name + property title
+Last message preview (if chat is included)
+Tapping opens Chat or a Contact screen
+3.10. Chat / Contact (simple)
+Classic chat layout:
+App bar with other user’s name + property
+Message bubbles, left/right
+Text input field with send button
+Make it visually clean and easy to read
+If you don’t implement real chat, at least design a contact sheet with email/phone and a copy button
+3.11. Settings & Profile
+Profile header with photo, name, role, city
+Options list:
+Edit profile
+Change language (EN / IT)
+About / Terms / Privacy
+Logout
+4. Navigation
+Propose a simple navigation system:
+For Tenant:
+Bottom tabs: Home (Swipe), Favorites, Matches, Profile
+For Landlord:
+Bottom tabs: Swipe Tenants, My Listings, Matches, Profile
+Make sure tab icons and labels are clear and balanced.
+5. Bilingual Text
+For each key label, button and title, provide both English and Italian versions, for example:
+“Sign In” / “Accedi”
+“Create an account” / “Crea un account”
+“Find homes with a swipe” / “Trova casa con uno swipe”
+Don’t just say “localized”: explicitly list the main strings in both EN & IT so they’re easy to implement.
+6. Output Format
+First: describe the design system (colors, typography, components).
+Then: list each screen with a structured description of layout and components.
+Ensure all descriptions are detailed enough that a developer can implement them in React Native / Expo without guessing.
