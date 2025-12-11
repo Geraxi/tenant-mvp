@@ -102,7 +102,7 @@ export default function Auth() {
     setLoading(true);
     setError(null);
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -115,10 +115,16 @@ export default function Auth() {
     
     if (error) {
       setError(error.message);
+      setLoading(false);
+      return;
+    }
+    
+    if (data.session) {
+      setLocation("/onboarding");
     } else {
       setError(language === "it" 
-        ? "Controlla la tua email per confermare la registrazione" 
-        : "Check your email to confirm your registration");
+        ? "Controlla la tua email per confermare la registrazione, poi accedi" 
+        : "Check your email to confirm registration, then sign in");
     }
     setLoading(false);
   };
