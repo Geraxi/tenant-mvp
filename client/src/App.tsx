@@ -21,6 +21,8 @@ import Profile from "@/pages/Profile";
 import Chat from "@/pages/Chat";
 
 import TenantDetails from "@/pages/TenantDetails";
+import Privacy from "@/pages/Privacy";
+import Help from "@/pages/Help";
 
 function Router() {
   return (
@@ -41,6 +43,12 @@ function Router() {
       </Route>
       <Route path="/tenant/profile">
         {() => <ProtectedRoute requiredRole="tenant"><Profile role="tenant" /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant/privacy">
+        {() => <ProtectedRoute requiredRole="tenant"><Privacy role="tenant" /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant/help">
+        {() => <ProtectedRoute requiredRole="tenant"><Help role="tenant" /></ProtectedRoute>}
       </Route>
       <Route path="/property/:id">
         {() => <ProtectedRoute><PropertyDetails /></ProtectedRoute>}
@@ -64,6 +72,12 @@ function Router() {
       </Route>
       <Route path="/landlord/profile">
         {() => <ProtectedRoute requiredRole="landlord"><Profile role="landlord" /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/privacy">
+        {() => <ProtectedRoute requiredRole="landlord"><Privacy role="landlord" /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/help">
+        {() => <ProtectedRoute requiredRole="landlord"><Help role="landlord" /></ProtectedRoute>}
       </Route>
 
       <Route path="/chat/:id">

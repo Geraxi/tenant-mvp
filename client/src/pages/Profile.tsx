@@ -77,7 +77,11 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
             <span className="font-bold text-gray-400 text-sm">{language.toUpperCase()}</span>
           </button>
 
-           <div className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 cursor-pointer">
+          <button 
+            onClick={() => setLocation(`/${role}/privacy`)}
+            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50"
+            data-testid="button-privacy"
+          >
             <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center">
               <Shield size={20} />
             </div>
@@ -85,9 +89,13 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
               <h3 className="font-bold text-gray-900">Privacy & Security</h3>
             </div>
             <ChevronRight size={20} className="text-gray-300" />
-          </div>
+          </button>
 
-          <div className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors cursor-pointer">
+          <button 
+            onClick={() => setLocation(`/${role}/help`)}
+            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+            data-testid="button-help"
+          >
             <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
               <HelpCircle size={20} />
             </div>
@@ -95,7 +103,7 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
               <h3 className="font-bold text-gray-900">Help & Support</h3>
             </div>
             <ChevronRight size={20} className="text-gray-300" />
-          </div>
+          </button>
         </div>
 
         <button 

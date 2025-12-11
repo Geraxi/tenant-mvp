@@ -44,11 +44,17 @@ export function BottomNav({ role }: { role: "tenant" | "landlord" }) {
   );
 }
 
-export function TopBar({ title, actionIcon: ActionIcon, onAction }: { title?: string, actionIcon?: any, onAction?: () => void }) {
+export function TopBar({ title, actionIcon: ActionIcon, onAction, actionPosition = "right" }: { title?: string, actionIcon?: any, onAction?: () => void, actionPosition?: "left" | "right" }) {
   const { t } = useLanguage();
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md z-40 flex items-center justify-between px-4 border-b border-gray-50">
-      <div className="w-10"></div> {/* Spacer for balance */}
+      <div className="w-10 flex justify-start">
+        {ActionIcon && actionPosition === "left" && (
+          <button onClick={onAction} className="p-2 text-gray-600 hover:text-primary transition-colors">
+            <ActionIcon className="w-5 h-5" />
+          </button>
+        )}
+      </div>
       {title ? (
         <h1 className="text-lg font-bold text-gray-900">{title}</h1>
       ) : (
@@ -58,7 +64,7 @@ export function TopBar({ title, actionIcon: ActionIcon, onAction }: { title?: st
         </div>
       )}
       <div className="w-10 flex justify-end">
-        {ActionIcon && (
+        {ActionIcon && actionPosition === "right" && (
           <button onClick={onAction} className="p-2 text-gray-600 hover:text-primary transition-colors">
             <ActionIcon className="w-5 h-5" />
           </button>

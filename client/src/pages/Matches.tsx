@@ -1,12 +1,13 @@
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export default function Matches({ role }: { role: "tenant" | "landlord" }) {
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
 
   const { data: matches = [], isLoading } = useQuery({
     queryKey: ["matches"],
@@ -38,7 +39,12 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
               <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">New Matches</h2>
               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2">
                 {matches.slice(0, 4).map((match) => (
-                  <div key={match.id} className="flex flex-col items-center gap-1 min-w-[70px]">
+                  <button 
+                    key={match.id} 
+                    onClick={() => setLocation(`/chat/${match.id}`)}
+                    className="flex flex-col items-center gap-1 min-w-[70px]"
+                    data-testid={`match-avatar-${match.id}`}
+                  >
                     <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-primary p-0.5">
                        <div className="w-full h-full rounded-full bg-gray-300 overflow-hidden">
                          <img src={`https://i.pravatar.cc/150?u=${match.id}`} className="w-full h-full object-cover" />
@@ -47,7 +53,7 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
                     <span className="text-xs font-semibold truncate w-full text-center">
                       {match.id.substring(0, 8)}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -57,7 +63,12 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Messages</h2>
                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                  {matches.map((match) => (
-                   <div key={match.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer">
+                   <button 
+                     key={match.id} 
+                     onClick={() => setLocation(`/chat/${match.id}`)}
+                     className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 text-left"
+                     data-testid={`match-message-${match.id}`}
+                   >
                      <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                        <img src={`https://i.pravatar.cc/150?u=${match.id}`} className="w-full h-full object-cover" />
                      </div>
@@ -68,7 +79,7 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
                        </div>
                        <p className="text-sm text-gray-500 truncate">Start a conversation...</p>
                      </div>
-                   </div>
+                   </button>
                  ))}
                </div>
             </div>
