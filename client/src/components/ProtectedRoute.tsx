@@ -33,6 +33,15 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     );
   }
 
+  if (!user?.role) {
+    window.location.href = "/onboarding";
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   if (requiredRole && user?.role !== requiredRole) {
     return (
       <div className="min-h-full bg-white flex flex-col items-center justify-center p-6">
@@ -45,15 +54,6 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         >
           Go Home
         </button>
-      </div>
-    );
-  }
-
-  if (!user?.role) {
-    window.location.href = "/onboarding";
-    return (
-      <div className="min-h-full bg-white flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
