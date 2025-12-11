@@ -44,3 +44,8 @@ waitForPort = 5000
 
 [agent]
 mockupState = "FULLSTACK"
+
+[userenv]
+
+[userenv.shared]
+VITE_SUPABASE_URL = "https://iohszsmnkbxpauqqdudy.supabase.co"
