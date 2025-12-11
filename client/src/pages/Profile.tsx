@@ -11,10 +11,10 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     queryClient.clear();
-    logout();
-    window.location.href = "/api/logout";
+    await logout();
+    window.location.href = "/";
   };
 
   const switchRole = () => {

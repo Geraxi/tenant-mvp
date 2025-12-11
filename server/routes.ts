@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import type { Server as HTTPServer } from "http";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./supabaseAuth";
 import { storage } from "./storage";
 import {
   insertPropertySchema,

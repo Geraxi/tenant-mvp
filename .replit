@@ -49,3 +49,4 @@ mockupState = "FULLSTACK"
 
 [userenv.shared]
 VITE_SUPABASE_URL = "https://iohszsmnkbxpauqqdudy.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1"
