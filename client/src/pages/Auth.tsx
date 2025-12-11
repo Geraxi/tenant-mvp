@@ -67,9 +67,13 @@ export default function Auth() {
             {t("auth.signIn")}
           </button>
 
-          <p className="text-center text-gray-500 text-sm">
-            {t("auth.createAccount") || "Sign in with Google, GitHub, Apple, or email"}
-          </p>
+          <button 
+            onClick={handleLogin}
+            className="w-full text-center text-gray-500 text-sm hover:text-primary transition-colors"
+            data-testid="button-create-account"
+          >
+            {t("auth.createAccount") || "Create an account"}
+          </button>
         </div>
 
       </motion.div>
