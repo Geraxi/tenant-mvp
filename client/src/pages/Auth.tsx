@@ -102,29 +102,40 @@ export default function Auth() {
     setLoading(true);
     setError(null);
     
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      },
-    });
-    
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-    
-    if (data.session) {
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Failed to create account');
+        setLoading(false);
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+
       setLocation("/onboarding");
-    } else {
-      setError(language === "it" 
-        ? "Controlla la tua email per confermare la registrazione, poi accedi" 
-        : "Check your email to confirm registration, then sign in");
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
     }
     setLoading(false);
   };

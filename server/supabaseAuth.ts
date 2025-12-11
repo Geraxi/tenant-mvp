@@ -6,8 +6,10 @@ import { storage } from "./storage";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -82,6 +84,65 @@ export async function setupAuth(app: Express) {
       }
       res.json({ message: "Logged out" });
     });
+  });
+
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+      if (error) {
+        return res.status(400).json({ message: error.message });
+      }
+
+      await storage.upsertUser({
+        id: data.user.id,
+        email: data.user.email || null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        profileImageUrl: null,
+      });
+
+      const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+      });
+
+      if (signInError) {
+        const { data: sessionData } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (sessionData.session) {
+          return res.json({ 
+            user: data.user,
+            session: sessionData.session,
+          });
+        }
+      }
+
+      res.json({ 
+        user: data.user,
+        message: "Account created successfully. Please sign in.",
+      });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
   });
 }
 
