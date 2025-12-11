@@ -86,6 +86,36 @@ export async function setupAuth(app: Express) {
     });
   });
 
+  // Admin endpoint to delete a user (for testing/cleanup)
+  app.delete("/api/auth/admin/user/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      // Find user in Supabase
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) {
+        return res.status(500).json({ message: listError.message });
+      }
+      
+      const supabaseUser = users.find(u => u.email === email);
+      if (supabaseUser) {
+        // Delete from Supabase
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(supabaseUser.id);
+        if (deleteError) {
+          console.error("Supabase delete error:", deleteError);
+        }
+        
+        // Delete from our database
+        await storage.deleteUser(supabaseUser.id);
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;

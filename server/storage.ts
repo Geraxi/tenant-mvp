@@ -29,6 +29,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
 
   // Properties
   getProperty(id: string): Promise<Property | undefined>;
@@ -127,6 +128,11 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
     const result = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return result[0];
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    return result.length > 0;
   }
 
   // Properties
