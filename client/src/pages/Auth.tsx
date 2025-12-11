@@ -20,10 +20,32 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const handleAuthFlow = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state');
+      
+      if (code && state) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (error) {
+            console.error('OAuth callback error:', error);
+            setError(error.message);
+          }
+        } catch (err) {
+          console.error('OAuth exchange failed:', err);
+          setError('Authentication failed. Please try again.');
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const response = await fetch("/api/auth/user");
+        const response = await fetch("/api/auth/user", {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
         if (response.ok) {
           const user = await response.json();
           if (user?.role) {
@@ -34,11 +56,15 @@ export default function Auth() {
         }
       }
     };
-    checkUser();
+    handleAuthFlow();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        const response = await fetch("/api/auth/user");
+        const response = await fetch("/api/auth/user", {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
         if (response.ok) {
           const user = await response.json();
           if (user?.role) {
@@ -61,7 +87,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/`,
       },
     });
     if (error) setError(error.message);
@@ -74,7 +100,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/`,
       },
     });
     if (error) setError(error.message);
