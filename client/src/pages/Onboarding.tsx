@@ -43,7 +43,7 @@ export default function Onboarding() {
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Please sign in first</h2>
         <p className="text-gray-500 mb-6">You need to be logged in to complete onboarding</p>
         <button 
-          onClick={() => window.location.href = "/api/login"}
+          onClick={() => window.location.href = "/"}
           className="bg-primary text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-lg"
           data-testid="button-login-onboarding"
         >
