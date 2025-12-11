@@ -1,11 +1,13 @@
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
-import { ArrowLeft, MessageCircle, Mail, FileText, ChevronRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, MessageCircle, Mail, FileText, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Help({ role }: { role: "tenant" | "landlord" }) {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const faqs = [
     {
@@ -26,6 +28,17 @@ export default function Help({ role }: { role: "tenant" | "landlord" }) {
     }
   ];
 
+  const handleLiveChat = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Live chat support will be available in a future update",
+    });
+  };
+
+  const handleEmailSupport = () => {
+    window.location.href = "mailto:support@tenant.app";
+  };
+
   return (
     <div className="min-h-full bg-gray-50 pb-20">
       <TopBar 
@@ -37,31 +50,43 @@ export default function Help({ role }: { role: "tenant" | "landlord" }) {
 
       <main className="pt-24 px-4 max-w-md mx-auto">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-          <div className="p-5 border-b border-gray-50 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-              <MessageCircle size={20} />
+          <button 
+            onClick={handleLiveChat}
+            className="w-full p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors text-left"
+            data-testid="button-live-chat"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                <MessageCircle size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">Live Chat Support</h3>
+                <p className="text-xs text-gray-500" data-testid="text-chat-status">Coming soon</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900">Live Chat Support</h3>
-              <p className="text-xs text-gray-500" data-testid="text-chat-status">Coming soon</p>
-            </div>
-          </div>
+          </button>
 
-          <div className="p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
-              <Mail size={20} />
+          <button 
+            onClick={handleEmailSupport}
+            className="w-full p-5 hover:bg-gray-50 transition-colors text-left"
+            data-testid="button-email-support"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
+                <Mail size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">Email Support</h3>
+                <p className="text-xs text-gray-500" data-testid="text-support-email">support@tenant.app</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900">Email Support</h3>
-              <p className="text-xs text-gray-500" data-testid="text-support-email">support@tenant.app</p>
-            </div>
-          </div>
+          </button>
         </div>
 
         <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Frequently Asked Questions</h2>
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           {faqs.map((faq, index) => (
-            <details key={index} className="group border-b border-gray-50 last:border-0">
+            <details key={index} className="group border-b border-gray-50 last:border-0" data-testid={`faq-item-${index}`}>
               <summary className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors cursor-pointer list-none">
                 <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center flex-shrink-0">
                   <FileText size={20} />
