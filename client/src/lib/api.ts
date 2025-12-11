@@ -1,4 +1,5 @@
 import type { User, Property, Roommate, Match, Favorite } from "@shared/schema";
+import { supabase } from "./supabase";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -7,12 +8,20 @@ export class ApiError extends Error {
 }
 
 async function fetchApi(url: string, options?: RequestInit) {
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...options?.headers as Record<string, string>,
+  };
+  
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
     credentials: 'include',
   });
 
