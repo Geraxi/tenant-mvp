@@ -25,8 +25,20 @@ export default function Onboarding() {
     occupation: "",
     bio: "",
     budget: "",
-    lookingFor: "homes" as "homes" | "roommates",
+    lookingFor: ["homes"] as ("homes" | "roommates")[],
   });
+
+  const toggleLookingFor = (option: "homes" | "roommates") => {
+    setFormData(prev => {
+      const current = prev.lookingFor;
+      if (current.includes(option)) {
+        if (current.length === 1) return prev;
+        return { ...prev, lookingFor: current.filter(o => o !== option) };
+      } else {
+        return { ...prev, lookingFor: [...current, option] };
+      }
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -86,9 +98,10 @@ export default function Onboarding() {
         occupation: formData.occupation || undefined,
         bio: formData.bio || undefined,
         budget: formData.budget ? parseInt(formData.budget) : undefined,
+        lookingFor: formData.role === "tenant" ? formData.lookingFor : undefined,
       });
 
-      if (formData.role === "tenant" && formData.lookingFor === "roommates") {
+      if (formData.role === "tenant" && formData.lookingFor.includes("roommates")) {
         await api.createRoommate({
           name: formData.name,
           age: formData.age ? parseInt(formData.age) : 25,
@@ -360,31 +373,37 @@ export default function Onboarding() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 ml-1">What are you looking for?</label>
+                      <label className="text-sm font-bold text-gray-700 ml-1">What are you looking for? (select all that apply)</label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
-                          onClick={() => setFormData({...formData, lookingFor: "homes"})}
+                          onClick={() => toggleLookingFor("homes")}
                           className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-                            formData.lookingFor === "homes" 
+                            formData.lookingFor.includes("homes") 
                               ? "border-primary bg-primary/5 text-primary" 
                               : "border-gray-100 text-gray-500 hover:border-gray-200"
                           }`}
                         >
                           <Home size={24} />
                           <span className="font-bold text-sm">Homes</span>
+                          {formData.lookingFor.includes("homes") && (
+                            <CheckCircle2 size={16} className="text-primary" />
+                          )}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData({...formData, lookingFor: "roommates"})}
+                          onClick={() => toggleLookingFor("roommates")}
                           className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-                            formData.lookingFor === "roommates" 
+                            formData.lookingFor.includes("roommates") 
                               ? "border-secondary bg-secondary/5 text-secondary" 
                               : "border-gray-100 text-gray-500 hover:border-gray-200"
                           }`}
                         >
                           <Users size={24} />
                           <span className="font-bold text-sm">Roommates</span>
+                          {formData.lookingFor.includes("roommates") && (
+                            <CheckCircle2 size={16} className="text-secondary" />
+                          )}
                         </button>
                       </div>
                     </div>
