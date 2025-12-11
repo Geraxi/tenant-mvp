@@ -116,7 +116,7 @@ export default function Onboarding() {
           {language === "it" ? "Devi accedere per completare la registrazione" : "You need to be logged in to complete onboarding"}
         </p>
         <button 
-          onClick={() => window.location.href = "/"}
+          onClick={() => setLocation("/")}
           className="bg-primary text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-lg"
           data-testid="button-login-onboarding"
         >
