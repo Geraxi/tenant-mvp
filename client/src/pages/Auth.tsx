@@ -72,9 +72,6 @@ export default function Auth() {
           </p>
         </div>
 
-        <div className="text-center text-xs text-gray-400 mt-4">
-          {t("auth.termsNotice") || "By signing in, you agree to our Terms of Service and Privacy Policy"}
-        </div>
       </motion.div>
     </div>
   );
