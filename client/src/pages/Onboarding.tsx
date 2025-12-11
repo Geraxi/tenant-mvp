@@ -6,6 +6,7 @@ import { ChevronRight, User, Building2, Search, Heart, ShieldCheck, ArrowRight, 
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TOTAL_STEPS = 5;
 
@@ -16,6 +17,7 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,12 +44,16 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (user) {
+      if (user.role) {
+        setLocation(`/${user.role}`);
+        return;
+      }
       setFormData(prev => ({
         ...prev,
         name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || prev.name,
       }));
     }
-  }, [user]);
+  }, [user, setLocation]);
 
   if (!isLoading && !isAuthenticated) {
     return (
@@ -114,6 +120,8 @@ export default function Onboarding() {
         });
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Welcome to Tenant!",
         description: "Your profile has been created successfully",
