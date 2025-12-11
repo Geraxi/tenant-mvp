@@ -29,6 +29,10 @@ export const users = pgTable("users", {
   budget: integer("budget"),
   lookingFor: text("looking_for").array(), // ['homes', 'roommates'] for tenants
   images: text("images").array(),
+  // Property preferences (for tenants looking for homes)
+  propertyPrefs: jsonb("property_prefs"), // { minPrice, maxPrice, propertyTypes, minBeds, furnished, petsAllowed }
+  // Roommate preferences (for tenants looking for roommates)
+  roommatePrefs: jsonb("roommate_prefs"), // { ageRange, lifestyle, habits }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
