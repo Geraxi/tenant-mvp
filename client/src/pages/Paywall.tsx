@@ -74,14 +74,14 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-b from-amber-50 to-white flex flex-col">
+    <div className="min-h-full bg-gradient-to-b from-blue-50 to-white flex flex-col">
       <div className="flex-1 p-6 flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6"
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full mb-4 shadow-lg">
             <Crown className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-black text-gray-900 mb-2">
@@ -103,8 +103,8 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
               key={index}
               className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
             >
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <feature.icon className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <feature.icon className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">{feature.title}</h3>
@@ -123,7 +123,7 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
         >
           <button
             onClick={() => handleSubscribe("yearly")}
-            className="w-full relative bg-gradient-to-r from-amber-400 to-amber-500 text-white p-5 rounded-2xl shadow-lg"
+            className="w-full relative bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg"
             data-testid="button-subscribe-yearly"
           >
             <span className="absolute -top-2 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -132,11 +132,11 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
             <div className="flex justify-between items-center">
               <div className="text-left">
                 <div className="font-bold text-lg">{texts.yearly}</div>
-                <div className="text-amber-100 text-sm">12 {language === "it" ? "mesi" : "months"}</div>
+                <div className="text-blue-200 text-sm">12 {language === "it" ? "mesi" : "months"}</div>
               </div>
               <div className="text-right">
                 <div className="font-black text-2xl">€7.99<span className="text-sm font-normal">/{language === "it" ? "mese" : "mo"}</span></div>
-                <div className="text-amber-100 text-sm line-through">€12.99/{language === "it" ? "mese" : "mo"}</div>
+                <div className="text-blue-200 text-sm line-through">€12.99/{language === "it" ? "mese" : "mo"}</div>
               </div>
             </div>
           </button>
