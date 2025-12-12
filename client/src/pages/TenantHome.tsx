@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
 import { SwipeCard } from "@/components/SwipeCard";
@@ -9,14 +10,17 @@ import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import Paywall from "@/pages/Paywall";
 
 export default function TenantHome() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [mode, setMode] = useState<"properties" | "roommates">("properties");
   const [lastDirection, setLastDirection] = useState<string | null>(null);
   const [propertyFilters, setPropertyFilters] = useState<FilterOptions | null>(null);
   const [roommateFilters, setRoommateFilters] = useState<FilterOptions | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const currentFilters = mode === "properties" ? propertyFilters : roommateFilters;
 
@@ -53,6 +57,10 @@ export default function TenantHome() {
       }
     },
     onError: (error: any) => {
+      if (error?.code === "SWIPE_LIMIT_REACHED") {
+        setShowPaywall(true);
+        return;
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to process swipe",
@@ -90,6 +98,15 @@ export default function TenantHome() {
     }
     return true;
   });
+
+  if (showPaywall) {
+    return (
+      <Paywall 
+        reason="swipe_limit" 
+        onSkip={() => setShowPaywall(false)} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-full bg-gray-50 pb-20">

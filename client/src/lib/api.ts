@@ -2,7 +2,7 @@ import type { User, Property, Roommate, Match, Favorite } from "@shared/schema";
 import { supabase } from "./supabase";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
   }
 }
@@ -27,7 +27,7 @@ async function fetchApi(url: string, options?: RequestInit) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    throw new ApiError(response.status, error.message);
+    throw new ApiError(response.status, error.message, error.code);
   }
 
   return response.json();
