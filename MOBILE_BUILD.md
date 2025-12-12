@@ -104,8 +104,46 @@ Use a tool like [App Icon Generator](https://appicon.co/) to generate all requir
 
 ## Splash Screen
 
-The app uses `@capacitor/splash-screen` for native splash screens.
-Configure in `capacitor.config.ts` and add images to native projects.
+The app uses `@capacitor/splash-screen` for native splash screens with a blue background (#3B82F6) and centered logo.
+
+**Pre-made splash screen assets are available in `resources/splash/`:**
+- `splash.png` - Square format (for general use)
+- `splash-portrait.png` - Portrait format (9:16 for mobile)
+
+### iOS Splash Screen Setup
+
+After running `npx cap add ios`, copy the splash image:
+
+1. Open `ios/App/App/Assets.xcassets/Splash.imageset/`
+2. Replace the images with `resources/splash/splash.png`
+3. Or use Xcode's Asset Catalog to configure a LaunchScreen storyboard with:
+   - Background color: #3B82F6
+   - Centered logo image
+
+### Android Splash Screen Setup
+
+After running `npx cap add android`:
+
+1. Copy `resources/splash/splash.png` to these folders:
+   - `android/app/src/main/res/drawable/splash.png`
+   - `android/app/src/main/res/drawable-land/splash.png`
+
+2. Or for different densities, resize and copy to:
+   - `drawable-mdpi` (320x480)
+   - `drawable-hdpi` (480x800)
+   - `drawable-xhdpi` (720x1280)
+   - `drawable-xxhdpi` (1080x1920)
+   - `drawable-xxxhdpi` (1440x2560)
+
+### Using Capacitor Assets (Recommended)
+
+For automatic generation of all sizes:
+```bash
+npm install -D @capacitor/assets
+npx capacitor-assets generate --splashBackgroundColor "#3B82F6"
+```
+
+Place your logo as `resources/splash.png` before running the command.
 
 ## Common Commands
 
