@@ -1,4 +1,4 @@
-import { Home, Heart, MessageCircle, User, Building, ListPlus } from "lucide-react";
+import { Home, Heart, MessageCircle, User, ListPlus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ export function BottomNav({ role }: { role: "tenant" | "landlord" }) {
     { href: "/landlord", icon: User, label: "Tenants" }, // "Swipe Tenants"
     { href: "/landlord/listings", icon: ListPlus, label: t("nav.listings") },
     { href: "/landlord/matches", icon: MessageCircle, label: t("nav.matches") },
-    { href: "/landlord/profile", icon: Building, label: t("nav.profile") },
+    { href: "/landlord/profile", icon: User, label: t("nav.profile") },
   ];
 
   const links = role === "tenant" ? tenantLinks : landlordLinks;
