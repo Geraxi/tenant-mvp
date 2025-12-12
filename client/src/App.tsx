@@ -25,6 +25,7 @@ import Privacy from "@/pages/Privacy";
 import Help from "@/pages/Help";
 import Terms from "@/pages/Terms";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Paywall from "@/pages/Paywall";
 
 function Router() {
   return (
@@ -32,6 +33,9 @@ function Router() {
       <Route path="/" component={Auth} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/paywall">
+        {() => <Paywall />}
+      </Route>
       <Route path="/role" component={RoleSelection} />
       <Route path="/onboarding" component={Onboarding} />
       

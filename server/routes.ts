@@ -180,9 +180,22 @@ export async function registerRoutes(
   // SWIPE ROUTES
   app.post("/api/swipes", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Check swipe limit for non-premium users
+      const FREE_SWIPE_LIMIT = 10;
+      if (user && !user.isPremium && (user.swipeCount || 0) >= FREE_SWIPE_LIMIT) {
+        return res.status(403).json({ 
+          message: "Swipe limit reached", 
+          code: "SWIPE_LIMIT_REACHED",
+          swipeCount: user.swipeCount 
+        });
+      }
+
       const result = insertSwipeSchema.safeParse({
         ...req.body,
-        userId: req.user.claims.sub,
+        userId,
       });
 
       if (!result.success) {
@@ -190,6 +203,11 @@ export async function registerRoutes(
       }
 
       const swipe = await storage.createSwipe(result.data);
+      
+      // Increment swipe count for non-premium users
+      if (user && !user.isPremium) {
+        await storage.updateUser(userId, { swipeCount: (user.swipeCount || 0) + 1 });
+      }
 
       if (result.data.action === 'like' && result.data.targetType === 'roommate') {
         const roommate = await storage.getRoommate(result.data.targetId);
