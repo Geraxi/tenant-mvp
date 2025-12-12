@@ -139,20 +139,44 @@ export default function Onboarding() {
     handleNext();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const [uploadingImages, setUploadingImages] = useState(false);
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          images: [...prev.images, reader.result as string].slice(0, 6),
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    
+    try {
+      for (const file of Array.from(files)) {
+        if (formData.images.length >= 6) break;
+        
+        // Read file as base64
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        // Upload to Supabase Storage
+        try {
+          const { url } = await api.uploadImage(base64, file.name, file.type);
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, url].slice(0, 6),
+          }));
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError);
+          // Fallback to base64 if storage upload fails (e.g., bucket not configured)
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, base64].slice(0, 6),
+          }));
+        }
+      }
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -709,11 +733,18 @@ export default function Onboarding() {
                 {formData.images.length < 6 && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-colors"
+                    disabled={uploadingImages}
+                    className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
                     data-testid="button-add-photo"
                   >
-                    <Camera size={24} />
-                    <span className="text-xs font-medium">{language === "it" ? "Aggiungi" : "Add"}</span>
+                    {uploadingImages ? (
+                      <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                    ) : (
+                      <>
+                        <Camera size={24} />
+                        <span className="text-xs font-medium">{language === "it" ? "Aggiungi" : "Add"}</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>

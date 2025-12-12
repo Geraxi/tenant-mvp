@@ -101,4 +101,11 @@ export const api = {
 
   checkFavorite: (propertyId: string): Promise<{ isFavorited: boolean }> =>
     fetchApi(`/api/favorites/${propertyId}/check`),
+
+  // Image Upload
+  uploadImage: (base64: string, fileName: string, contentType?: string): Promise<{ url: string }> =>
+    fetchApi('/api/upload/image', {
+      method: 'POST',
+      body: JSON.stringify({ base64, fileName, contentType }),
+    }),
 };

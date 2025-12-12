@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Express, RequestHandler } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -10,6 +11,23 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+// Rate limiters for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { message: "Too many attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // limit each IP to 20 uploads per minute
+  message: { message: "Too many uploads, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -21,8 +39,15 @@ export function getSession() {
     tableName: "sessions",
   });
   const isProduction = process.env.NODE_ENV === "production";
+  
+  // Require SESSION_SECRET in production
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (isProduction && !sessionSecret) {
+    throw new Error("SESSION_SECRET environment variable is required in production");
+  }
+  
   return session({
-    secret: process.env.SESSION_SECRET || 'tenant-app-secret-key',
+    secret: sessionSecret || 'dev-only-secret-key',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -86,8 +111,67 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Admin endpoint to delete a user (for testing/cleanup)
+  // Image upload endpoint using Supabase Storage
+  app.post("/api/upload/image", uploadLimiter, async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !supabaseUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { base64, fileName, contentType } = req.body;
+
+      if (!base64 || !fileName) {
+        return res.status(400).json({ message: "Missing base64 or fileName" });
+      }
+
+      // Convert base64 to buffer
+      const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      // Generate unique file path
+      const fileExt = fileName.split('.').pop() || 'jpg';
+      const filePath = `users/${supabaseUser.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabaseAdmin.storage
+        .from('user-images')
+        .upload(filePath, buffer, {
+          contentType: contentType || 'image/jpeg',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Storage upload error:', error);
+        return res.status(500).json({ message: error.message });
+      }
+
+      // Get public URL
+      const { data: urlData } = supabaseAdmin.storage
+        .from('user-images')
+        .getPublicUrl(filePath);
+
+      res.json({ url: urlData.publicUrl });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Admin endpoint to delete a user (DEVELOPMENT ONLY - for testing/cleanup)
   app.delete("/api/auth/admin/user/:email", async (req, res) => {
+    // Only allow in development
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Forbidden in production" });
+    }
+    
     try {
       const { email } = req.params;
       
@@ -116,7 +200,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", authLimiter, async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
 

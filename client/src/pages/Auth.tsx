@@ -308,6 +308,16 @@ export default function Auth() {
               >
                 {loading ? "..." : texts.signUp}
               </button>
+              <p className="text-center text-xs text-gray-500 mt-2">
+                {language === "it" ? "Registrandoti accetti i nostri " : "By signing up you agree to our "}
+                <a href="/terms" className="text-blue-500 underline" data-testid="link-terms-signup">
+                  {language === "it" ? "Termini" : "Terms"}
+                </a>
+                {" & "}
+                <a href="/privacy-policy" className="text-blue-500 underline" data-testid="link-privacy-signup">
+                  Privacy
+                </a>
+              </p>
             </form>
           </div>
         </motion.div>
@@ -362,6 +372,16 @@ export default function Auth() {
           >
             {texts.createAccount}
           </button>
+        </div>
+
+        <div className="text-center text-xs text-white/60 mt-4">
+          <a href="/terms" className="underline hover:text-white/80" data-testid="link-terms">
+            {language === "it" ? "Termini di Servizio" : "Terms of Service"}
+          </a>
+          {" | "}
+          <a href="/privacy-policy" className="underline hover:text-white/80" data-testid="link-privacy">
+            {language === "it" ? "Privacy Policy" : "Privacy Policy"}
+          </a>
         </div>
       </motion.div>
     </div>
