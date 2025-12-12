@@ -75,6 +75,14 @@ export const roommates = pgTable("roommates", {
   moveInDate: text("move_in_date").notNull(),
   preferences: text("preferences").array().notNull(),
   images: text("images").array().notNull(),
+  // Property info for users with a place looking for roommates
+  hasPlace: boolean("has_place").default(false),
+  propertyCity: text("property_city"),
+  propertyArea: text("property_area"),
+  propertyRent: integer("property_rent"),
+  propertyDescription: text("property_description"),
+  propertyAmenities: text("property_amenities").array(),
+  propertyImages: text("property_images").array(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

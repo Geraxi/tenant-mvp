@@ -43,7 +43,21 @@ export default function Onboarding() {
       lifestyle: [] as string[],
       habits: [] as string[],
     },
+    // My place info (for roommate seekers with a place)
+    hasPlace: false,
+    myPlace: {
+      city: "",
+      area: "",
+      rent: "",
+      description: "",
+      amenities: [] as string[],
+      images: [] as string[],
+    },
   });
+  
+  const propertyImageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPropertyImages, setUploadingPropertyImages] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const toggleLookingFor = (option: "homes" | "roommates") => {
     setFormData(prev => {
@@ -89,6 +103,68 @@ export default function Onboarding() {
         habits: prev.roommatePrefs.habits.includes(item)
           ? prev.roommatePrefs.habits.filter(h => h !== item)
           : [...prev.roommatePrefs.habits, item],
+      },
+    }));
+  };
+
+  const togglePlaceAmenity = (item: string) => {
+    setFormData(prev => ({
+      ...prev,
+      myPlace: {
+        ...prev.myPlace,
+        amenities: prev.myPlace.amenities.includes(item)
+          ? prev.myPlace.amenities.filter(a => a !== item)
+          : [...prev.myPlace.amenities, item],
+      },
+    }));
+  };
+
+  const handlePropertyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingPropertyImages(true);
+    
+    try {
+      for (const file of Array.from(files)) {
+        if (formData.myPlace.images.length >= 6) break;
+        
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        try {
+          const { url } = await api.uploadImage(base64, file.name, file.type);
+          setFormData(prev => ({
+            ...prev,
+            myPlace: {
+              ...prev.myPlace,
+              images: [...prev.myPlace.images, url].slice(0, 6),
+            },
+          }));
+        } catch {
+          setFormData(prev => ({
+            ...prev,
+            myPlace: {
+              ...prev.myPlace,
+              images: [...prev.myPlace.images, base64].slice(0, 6),
+            },
+          }));
+        }
+      }
+    } finally {
+      setUploadingPropertyImages(false);
+    }
+  };
+
+  const removePropertyImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      myPlace: {
+        ...prev.myPlace,
+        images: prev.myPlace.images.filter((_, i) => i !== index),
       },
     }));
   };
@@ -152,8 +228,6 @@ export default function Onboarding() {
     handleNext();
   };
 
-  const [uploadingImages, setUploadingImages] = useState(false);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -202,10 +276,13 @@ export default function Onboarding() {
   // Calculate total steps based on role and lookingFor
   const getTotalSteps = () => {
     if (formData.role === "landlord") return 6; // Welcome, Security, Role, Info, Photos, Confirm
-    // Tenant: Welcome, Security, Role, Info, Photos, [PropertyPrefs], [RoommatePrefs], Confirm
+    // Tenant: Welcome, Security, Role, Info, Photos, [PropertyPrefs], [RoommatePrefs], [MyPlace], Confirm
     let steps = 6;
     if (formData.lookingFor.includes("homes")) steps++;
-    if (formData.lookingFor.includes("roommates")) steps++;
+    if (formData.lookingFor.includes("roommates")) {
+      steps++; // roommate prefs
+      if (formData.hasPlace) steps++; // my place info
+    }
     return steps;
   };
 
@@ -262,6 +339,13 @@ export default function Onboarding() {
           moveInDate: "Flexible",
           preferences: formData.roommatePrefs.lifestyle.concat(formData.roommatePrefs.habits),
           images: formData.images.length > 0 ? formData.images : [user.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"],
+          hasPlace: formData.hasPlace,
+          propertyCity: formData.hasPlace ? formData.myPlace.city : undefined,
+          propertyArea: formData.hasPlace ? formData.myPlace.area : undefined,
+          propertyRent: formData.hasPlace && formData.myPlace.rent ? parseInt(formData.myPlace.rent) : undefined,
+          propertyDescription: formData.hasPlace ? formData.myPlace.description : undefined,
+          propertyAmenities: formData.hasPlace ? formData.myPlace.amenities : undefined,
+          propertyImages: formData.hasPlace ? formData.myPlace.images : undefined,
         });
       }
 
@@ -340,6 +424,10 @@ export default function Onboarding() {
       if (formData.lookingFor.includes("roommates")) {
         if (step === currentStep) return "roommate_prefs";
         currentStep++;
+        if (formData.hasPlace) {
+          if (step === currentStep) return "my_place";
+          currentStep++;
+        }
       }
       if (step === currentStep) return "confirm";
     }
@@ -1038,12 +1126,192 @@ export default function Onboarding() {
                     ))}
                   </div>
                 </div>
+
+                <div className="space-y-2 pt-4 border-t border-gray-100">
+                  <label className="text-sm font-bold text-gray-700 ml-1">
+                    {language === "it" ? "Hai gia un posto?" : "Do you have a place?"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, hasPlace: !formData.hasPlace })}
+                    className={`w-full p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
+                      formData.hasPlace
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-100 text-gray-500 hover:border-gray-200"
+                    }`}
+                    data-testid="button-has-place"
+                  >
+                    <Home size={20} />
+                    <span className="font-medium flex-1 text-left">
+                      {formData.hasPlace 
+                        ? (language === "it" ? "Si, cerco un coinquilino per il mio posto" : "Yes, I'm looking for a roommate for my place")
+                        : (language === "it" ? "No, cerco un posto con coinquilini" : "No, I'm looking for a place with roommates")}
+                    </span>
+                    {formData.hasPlace && <CheckCircle2 size={20} className="text-green-500" />}
+                  </button>
+                </div>
               </div>
 
               <button 
                 onClick={handleNext}
                 className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-6"
                 data-testid="button-next-roommate-prefs"
+              >
+                {language === "it" ? "Continua" : "Continue"} <ArrowRight size={20} />
+              </button>
+            </motion.div>
+          )}
+
+          {/* My Place Step (for roommate seekers with a place) */}
+          {currentContent === "my_place" && (
+            <motion.div
+              key="my_place"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex-1 flex flex-col"
+            >
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gray-900 mb-2">
+                  {language === "it" ? "Il tuo posto" : "Your place"}
+                </h2>
+                <p className="text-gray-500">
+                  {language === "it" ? "Racconta ai potenziali coinquilini del tuo appartamento" : "Tell potential roommates about your apartment"}
+                </p>
+              </div>
+
+              <div className="space-y-4 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                      <MapPin size={14} /> {language === "it" ? "Citta" : "City"}
+                    </label>
+                    <input 
+                      type="text" 
+                      value={formData.myPlace.city}
+                      onChange={(e) => setFormData({ ...formData, myPlace: { ...formData.myPlace, city: e.target.value }})}
+                      placeholder="Milano, Roma..."
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                      data-testid="input-place-city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1">
+                      {language === "it" ? "Zona" : "Area"}
+                    </label>
+                    <input 
+                      type="text" 
+                      value={formData.myPlace.area}
+                      onChange={(e) => setFormData({ ...formData, myPlace: { ...formData.myPlace, area: e.target.value }})}
+                      placeholder="Centro, Navigli..."
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                      data-testid="input-place-area"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                    <Euro size={14} /> {language === "it" ? "Affitto mensile (quota)" : "Monthly rent (share)"}
+                  </label>
+                  <input 
+                    type="number" 
+                    value={formData.myPlace.rent}
+                    onChange={(e) => setFormData({ ...formData, myPlace: { ...formData.myPlace, rent: e.target.value }})}
+                    placeholder="500"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium"
+                    data-testid="input-place-rent"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">
+                    {language === "it" ? "Descrizione" : "Description"}
+                  </label>
+                  <textarea 
+                    value={formData.myPlace.description}
+                    onChange={(e) => setFormData({ ...formData, myPlace: { ...formData.myPlace, description: e.target.value }})}
+                    placeholder={language === "it" ? "Descrivi il tuo appartamento..." : "Describe your apartment..."}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none font-medium resize-none"
+                    data-testid="input-place-description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">
+                    {language === "it" ? "Servizi" : "Amenities"}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {["WiFi", "Lavatrice", "Cucina", "Balcone", "AC", "Parking"].map((amenity) => (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => togglePlaceAmenity(amenity)}
+                        className={`px-3 py-2 rounded-full border-2 text-sm font-medium transition-all ${
+                          formData.myPlace.amenities.includes(amenity)
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-gray-100 text-gray-500 hover:border-gray-200"
+                        }`}
+                        data-testid={`button-amenity-${amenity}`}
+                      >
+                        {amenity}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                    <Camera size={14} /> {language === "it" ? "Foto del posto (max 6)" : "Photos of your place (max 6)"}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {formData.myPlace.images.map((img, index) => (
+                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                        <img src={img} alt={`Place ${index + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removePropertyImage(index)}
+                          className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center"
+                          data-testid={`button-remove-place-image-${index}`}
+                        >
+                          <X size={12} className="text-white" />
+                        </button>
+                      </div>
+                    ))}
+                    {formData.myPlace.images.length < 6 && (
+                      <button
+                        onClick={() => propertyImageInputRef.current?.click()}
+                        disabled={uploadingPropertyImages}
+                        className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                        data-testid="button-add-place-photo"
+                      >
+                        {uploadingPropertyImages ? (
+                          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <Plus size={20} />
+                            <span className="text-xs">Add</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={propertyImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePropertyImageUpload}
+                    className="hidden"
+                    data-testid="input-place-photos"
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={handleNext}
+                className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-6"
+                data-testid="button-next-my-place"
               >
                 {language === "it" ? "Continua" : "Continue"} <ArrowRight size={20} />
               </button>
