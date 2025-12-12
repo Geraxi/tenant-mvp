@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { initializePushNotifications, isPushSupported, getPushPermissionState } from "@/lib/pushNotifications";
+import { initializeCapacitorPush, isCapacitorPlatform } from "@/lib/capacitorPush";
 
 export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const { t, language, setLanguage } = useLanguage();
@@ -22,13 +23,18 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   }, []);
 
   const handleEnablePush = async () => {
-    if (!isPushSupported()) {
-      alert('Push notifications are not supported on this device');
-      return;
-    }
     setPushLoading(true);
     try {
-      const success = await initializePushNotifications();
+      let success = false;
+      if (isCapacitorPlatform()) {
+        success = await initializeCapacitorPush();
+      } else if (isPushSupported()) {
+        success = await initializePushNotifications();
+      } else {
+        alert('Push notifications are not supported on this device');
+        setPushLoading(false);
+        return;
+      }
       setPushEnabled(success);
     } catch (error) {
       console.error('Failed to enable push notifications:', error);

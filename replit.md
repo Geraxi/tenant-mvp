@@ -115,6 +115,7 @@ The server handles authentication, user management, property/roommate CRUD opera
 
 ## Push Notifications
 - Web Push API implementation using VAPID keys
+- Capacitor Push Notifications for native iOS/Android
 - Service worker handles push events and notification display
 - Notifications sent on:
   - New matches (both users notified)
@@ -124,3 +125,10 @@ The server handles authentication, user management, property/roommate CRUD opera
   - `VAPID_PUBLIC_KEY` - Public VAPID key for push
   - `VAPID_PRIVATE_KEY` - Private VAPID key (secret)
   - `VITE_VAPID_PUBLIC_KEY` - Public key for frontend
+
+## Mobile App (Capacitor)
+- Capacitor configured for iOS and Android builds
+- App ID: `app.tenant.rental`
+- Web assets built to `dist/public`
+- Native plugins: push-notifications, splash-screen, status-bar
+- Build instructions in `MOBILE_BUILD.md`
