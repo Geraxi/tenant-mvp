@@ -10,6 +10,7 @@ import {
   messages,
   reports,
   blocks,
+  pushSubscriptions,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -29,6 +30,8 @@ import {
   type InsertReport,
   type Block,
   type InsertBlock,
+  type PushSubscription,
+  type InsertPushSubscription,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -91,6 +94,12 @@ export interface IStorage {
   isBlocked(blockerId: string, blockedId: string): Promise<boolean>;
   getUserBlocks(userId: string): Promise<Block[]>;
   removeBlock(blockerId: string, blockedId: string): Promise<boolean>;
+
+  // Push Subscriptions
+  createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  getUserPushSubscriptions(userId: string): Promise<PushSubscription[]>;
+  deletePushSubscription(id: string): Promise<boolean>;
+  getPushSubscriptionByEndpoint(endpoint: string): Promise<PushSubscription | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -415,6 +424,26 @@ export class DatabaseStorage implements IStorage {
   // Match by ID
   async getMatch(matchId: string): Promise<Match | undefined> {
     const result = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+    return result[0];
+  }
+
+  // Push Subscriptions
+  async createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    const result = await db.insert(pushSubscriptions).values(subscription).returning();
+    return result[0];
+  }
+
+  async getUserPushSubscriptions(userId: string): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async deletePushSubscription(id: string): Promise<boolean> {
+    const result = await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getPushSubscriptionByEndpoint(endpoint: string): Promise<PushSubscription | undefined> {
+    const result = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)).limit(1);
     return result[0];
   }
 }

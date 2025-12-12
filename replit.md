@@ -112,3 +112,15 @@ The server handles authentication, user management, property/roommate CRUD opera
 - Report users with reason and description
 - Block/unblock users
 - Blocked users cannot send messages or view each other's profiles
+
+## Push Notifications
+- Web Push API implementation using VAPID keys
+- Service worker handles push events and notification display
+- Notifications sent on:
+  - New matches (both users notified)
+  - New messages (recipient notified)
+- Subscribe/unsubscribe endpoints for managing device subscriptions
+- Environment Variables:
+  - `VAPID_PUBLIC_KEY` - Public VAPID key for push
+  - `VAPID_PRIVATE_KEY` - Private VAPID key (secret)
+  - `VITE_VAPID_PUBLIC_KEY` - Public key for frontend

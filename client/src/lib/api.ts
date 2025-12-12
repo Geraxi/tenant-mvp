@@ -162,4 +162,17 @@ export const api = {
 
   getSubscription: (): Promise<{ isPremium: boolean; premiumUntil: string | null; subscriptionId: string | null }> =>
     fetchApi('/api/subscription'),
+
+  // Push Notifications
+  subscribeToPush: (subscription: { endpoint: string; p256dh: string; auth: string }) =>
+    fetchApi('/api/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    }),
+
+  unsubscribeFromPush: (endpoint: string) =>
+    fetchApi('/api/push/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify({ endpoint }),
+    }),
 };

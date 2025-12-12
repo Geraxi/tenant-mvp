@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { storage } from './storage';
+import type { PushSubscription } from '@shared/schema';
 
 const VAPID_SUBJECT = 'mailto:support@tenant.app';
 
@@ -31,7 +32,7 @@ class PushService {
     body: string;
     icon?: string;
     url?: string;
-    data?: any;
+    data?: Record<string, unknown>;
   }) {
     if (!this.initialized) {
       await this.init();
@@ -54,7 +55,7 @@ class PushService {
     });
 
     const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
+      subscriptions.map(async (sub: PushSubscription) => {
         try {
           await webpush.sendNotification(
             {
@@ -66,8 +67,9 @@ class PushService {
             },
             notificationPayload
           );
-        } catch (error: any) {
-          if (error.statusCode === 410 || error.statusCode === 404) {
+        } catch (error: unknown) {
+          const err = error as { statusCode?: number };
+          if (err.statusCode === 410 || err.statusCode === 404) {
             await storage.deletePushSubscription(sub.id);
           }
           throw error;
@@ -75,8 +77,8 @@ class PushService {
       })
     );
 
-    const succeeded = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    const succeeded = results.filter((r: PromiseSettledResult<void>) => r.status === 'fulfilled').length;
+    const failed = results.filter((r: PromiseSettledResult<void>) => r.status === 'rejected').length;
     
     console.log(`Push sent to ${userId}: ${succeeded} succeeded, ${failed} failed`);
   }

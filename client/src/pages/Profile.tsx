@@ -1,15 +1,40 @@
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
 import { useLocation } from "wouter";
-import { Settings, LogOut, Globe, Shield, HelpCircle, ChevronRight, RefreshCcw } from "lucide-react";
+import { Settings, LogOut, Globe, Shield, HelpCircle, ChevronRight, RefreshCcw, Bell, BellOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { initializePushNotifications, isPushSupported, getPushPermissionState } from "@/lib/pushNotifications";
 
 export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const { t, language, setLanguage } = useLanguage();
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    getPushPermissionState().then(state => {
+      setPushEnabled(state === 'granted');
+    });
+  }, []);
+
+  const handleEnablePush = async () => {
+    if (!isPushSupported()) {
+      alert('Push notifications are not supported on this device');
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const success = await initializePushNotifications();
+      setPushEnabled(success);
+    } catch (error) {
+      console.error('Failed to enable push notifications:', error);
+    }
+    setPushLoading(false);
+  };
 
   const handleLogout = async () => {
     queryClient.clear();
@@ -75,6 +100,24 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
               <p className="text-xs text-gray-500">{language === "en" ? "English" : "Italiano"}</p>
             </div>
             <span className="font-bold text-gray-400 text-sm">{language.toUpperCase()}</span>
+          </button>
+
+          <button 
+            onClick={handleEnablePush}
+            disabled={pushLoading || pushEnabled}
+            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 disabled:opacity-50"
+            data-testid="button-push-notifications"
+          >
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pushEnabled ? 'bg-green-50 text-green-500' : 'bg-yellow-50 text-yellow-500'}`}>
+              {pushEnabled ? <Bell size={20} /> : <BellOff size={20} />}
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="font-bold text-gray-900">Push Notifications</h3>
+              <p className="text-xs text-gray-500">
+                {pushLoading ? 'Enabling...' : pushEnabled ? 'Enabled' : 'Tap to enable'}
+              </p>
+            </div>
+            {!pushEnabled && <ChevronRight size={20} className="text-gray-300" />}
           </button>
 
           <button 

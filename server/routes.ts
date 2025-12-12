@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { stripeService } from "./stripeService";
 import { getStripePublishableKey } from "./stripeClient";
+import { pushService } from "./pushService";
 
 export async function registerRoutes(
   server: HTTPServer,
@@ -241,6 +242,16 @@ export async function registerRoutes(
                 relatedType: 'roommate',
                 relatedId: result.data.targetId,
               });
+              
+              const currentUser = await storage.getUser(req.user.claims.sub);
+              const otherUser = await storage.getUser(roommate.userId);
+              if (otherUser) {
+                pushService.notifyNewMatch(roommate.userId, currentUser?.firstName || 'Someone').catch(console.error);
+              }
+              if (currentUser) {
+                pushService.notifyNewMatch(req.user.claims.sub, otherUser?.firstName || 'Someone').catch(console.error);
+              }
+              
               return res.json({ ...swipe, matched: true });
             }
           }
@@ -410,6 +421,10 @@ export async function registerRoutes(
       }
 
       const message = await storage.createMessage(result.data);
+      
+      const sender = await storage.getUser(userId);
+      pushService.notifyNewMessage(otherUserId, sender?.firstName || 'Someone', req.params.matchId).catch(console.error);
+      
       res.json(message);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -597,6 +612,76 @@ export async function registerRoutes(
         premiumUntil: user?.premiumUntil,
         subscriptionId: user?.stripeSubscriptionId
       });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // PUSH NOTIFICATION ROUTES
+  app.get("/api/push/vapid-key", (req, res) => {
+    const publicKey = pushService.getPublicKey();
+    if (publicKey) {
+      res.json({ publicKey });
+    } else {
+      res.status(503).json({ message: "Push notifications not configured" });
+    }
+  });
+
+  app.post("/api/push/subscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { endpoint, p256dh, auth } = req.body;
+
+      if (!endpoint || !p256dh || !auth) {
+        return res.status(400).json({ message: "Invalid subscription data" });
+      }
+
+      const existing = await storage.getPushSubscriptionByEndpoint(endpoint);
+      if (existing) {
+        return res.json({ message: "Already subscribed" });
+      }
+
+      const subscription = await storage.createPushSubscription({
+        userId,
+        endpoint,
+        p256dh,
+        auth,
+      });
+
+      res.json({ message: "Subscribed", id: subscription.id });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const { endpoint } = req.body;
+      
+      if (!endpoint) {
+        return res.status(400).json({ message: "Endpoint required" });
+      }
+
+      const subscription = await storage.getPushSubscriptionByEndpoint(endpoint);
+      if (subscription) {
+        await storage.deletePushSubscription(subscription.id);
+      }
+
+      res.json({ message: "Unsubscribed" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/push/test", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await pushService.sendNotification(userId, {
+        title: 'Test Notification',
+        body: 'Push notifications are working!',
+        url: '/',
+      });
+      res.json({ message: "Test notification sent" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
