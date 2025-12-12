@@ -13,10 +13,10 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       backgroundColor: '#3B82F6',
       showSpinner: false,
-      androidSpinnerStyle: 'small',
-      iosSpinnerStyle: 'small',
       splashFullScreen: true,
       splashImmersive: true,
+      layoutName: 'launch_screen',
+      useDialog: false,
     },
     StatusBar: {
       style: 'dark',
