@@ -33,6 +33,10 @@ export const users = pgTable("users", {
   propertyPrefs: jsonb("property_prefs"), // { minPrice, maxPrice, propertyTypes, minBeds, furnished, petsAllowed }
   // Roommate preferences (for tenants looking for roommates)
   roommatePrefs: jsonb("roommate_prefs"), // { ageRange, lifestyle, habits }
+  // Premium/subscription fields
+  isPremium: boolean("is_premium").default(false),
+  swipeCount: integer("swipe_count").default(0),
+  premiumUntil: timestamp("premium_until"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
