@@ -17,7 +17,9 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").unique(),
-  role: text("role"), // 'tenant' or 'landlord' - set after first login
+  role: text("role"), // 'tenant' or 'landlord' - current active role
+  hasTenantProfile: boolean("has_tenant_profile").default(false),
+  hasLandlordProfile: boolean("has_landlord_profile").default(false),
   name: text("name"),
   firstName: text("first_name"),
   lastName: text("last_name"),

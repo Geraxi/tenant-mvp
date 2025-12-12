@@ -51,21 +51,27 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
 
   const [switchingRole, setSwitchingRole] = useState(false);
 
+  const otherRole = role === "tenant" ? "landlord" : "tenant";
+  const hasOtherProfile = role === "tenant" ? user?.hasLandlordProfile : user?.hasTenantProfile;
+
   const switchRole = async () => {
     if (!user || switchingRole) return;
     
-    const newRole = role === "tenant" ? "landlord" : "tenant";
     setSwitchingRole(true);
     
     try {
-      await api.updateUser(user.id, { role: newRole });
+      await api.updateUser(user.id, { role: otherRole });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      setLocation(`/${newRole}`);
+      setLocation(`/${otherRole}`);
     } catch (error) {
       console.error('Failed to switch role:', error);
     } finally {
       setSwitchingRole(false);
     }
+  };
+
+  const createOtherProfile = () => {
+    setLocation(`/onboarding?createRole=${otherRole}`);
   };
 
   return (
@@ -96,21 +102,38 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
 
         {/* Menu */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-          <button 
-            onClick={switchRole}
-            disabled={switchingRole}
-            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 disabled:opacity-50"
-            data-testid="button-switch-role"
-          >
-            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
-              <RefreshCcw size={20} className={switchingRole ? "animate-spin" : ""} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-bold text-gray-900">Switch to {role === "tenant" ? "Landlord" : "Tenant"}</h3>
-              <p className="text-xs text-gray-500">{switchingRole ? "Switching..." : `Currently: ${role === "tenant" ? "Tenant" : "Landlord"}`}</p>
-            </div>
-            <ChevronRight size={20} className="text-gray-300" />
-          </button>
+          {hasOtherProfile ? (
+            <button 
+              onClick={switchRole}
+              disabled={switchingRole}
+              className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 disabled:opacity-50"
+              data-testid="button-switch-role"
+            >
+              <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                <RefreshCcw size={20} className={switchingRole ? "animate-spin" : ""} />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-bold text-gray-900">Switch to {otherRole === "tenant" ? "Tenant" : "Landlord"}</h3>
+                <p className="text-xs text-gray-500">{switchingRole ? "Switching..." : `Currently: ${role === "tenant" ? "Tenant" : "Landlord"}`}</p>
+              </div>
+              <ChevronRight size={20} className="text-gray-300" />
+            </button>
+          ) : (
+            <button 
+              onClick={createOtherProfile}
+              className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50"
+              data-testid="button-create-profile"
+            >
+              <div className="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
+                <RefreshCcw size={20} />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-bold text-gray-900">Create {otherRole === "tenant" ? "Tenant" : "Landlord"} Profile</h3>
+                <p className="text-xs text-gray-500">Add a second account type</p>
+              </div>
+              <ChevronRight size={20} className="text-gray-300" />
+            </button>
+          )}
 
           <button 
             onClick={() => setLanguage(language === "en" ? "it" : "en")}

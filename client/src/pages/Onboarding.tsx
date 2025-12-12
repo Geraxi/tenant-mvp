@@ -95,6 +95,19 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (user) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const createRole = urlParams.get('createRole') as "tenant" | "landlord" | null;
+      
+      if (createRole) {
+        setFormData(prev => ({
+          ...prev,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || prev.name,
+          role: createRole,
+        }));
+        setStep(3);
+        return;
+      }
+      
       if (user.role) {
         setLocation(`/${user.role}`);
         return;
@@ -211,6 +224,8 @@ export default function Onboarding() {
       await api.updateUser(user.id, {
         name: formData.name,
         role: formData.role,
+        hasTenantProfile: formData.role === "tenant" ? true : user.hasTenantProfile,
+        hasLandlordProfile: formData.role === "landlord" ? true : user.hasLandlordProfile,
         city: formData.city || undefined,
         age: formData.age ? parseInt(formData.age) : undefined,
         occupation: formData.occupation || undefined,
