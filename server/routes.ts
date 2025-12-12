@@ -181,16 +181,30 @@ export async function registerRoutes(
   app.post("/api/swipes", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let user = await storage.getUser(userId);
       
-      // Check swipe limit for non-premium users
+      // Check if we need to reset daily swipe count (for non-premium users)
       const FREE_SWIPE_LIMIT = 10;
-      if (user && !user.isPremium && (user.swipeCount || 0) >= FREE_SWIPE_LIMIT) {
-        return res.status(403).json({ 
-          message: "Swipe limit reached", 
-          code: "SWIPE_LIMIT_REACHED",
-          swipeCount: user.swipeCount 
-        });
+      if (user && !user.isPremium) {
+        const lastReset = user.lastSwipeReset ? new Date(user.lastSwipeReset) : new Date(0);
+        const now = new Date();
+        const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Reset swipe count if it's a new day
+        if (daysSinceReset >= 1) {
+          await storage.updateUser(userId, { swipeCount: 0, lastSwipeReset: now });
+          user = { ...user, swipeCount: 0, lastSwipeReset: now };
+        }
+        
+        // Check swipe limit for non-premium users (10 free swipes per day)
+        if ((user.swipeCount || 0) >= FREE_SWIPE_LIMIT) {
+          return res.status(403).json({ 
+            message: "Daily swipe limit reached", 
+            code: "SWIPE_LIMIT_REACHED",
+            swipeCount: user.swipeCount,
+            resetsAt: new Date(lastReset.getTime() + 24 * 60 * 60 * 1000).toISOString()
+          });
+        }
       }
 
       const result = insertSwipeSchema.safeParse({

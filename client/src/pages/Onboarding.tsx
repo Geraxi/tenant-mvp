@@ -256,7 +256,9 @@ export default function Onboarding() {
         title: language === "it" ? "Benvenuto su Tenant!" : "Welcome to Tenant!",
         description: language === "it" ? "Il tuo profilo e stato creato" : "Your profile has been created successfully",
       });
-      setLocation(`/${formData.role}`);
+      
+      // Show paywall after signup (user can skip to continue with limited features)
+      setLocation("/paywall");
     } catch (error: any) {
       toast({
         title: language === "it" ? "Errore" : "Error",

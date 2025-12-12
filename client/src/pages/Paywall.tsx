@@ -2,6 +2,8 @@ import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { Crown, Check, X, Sparkles, Heart, Eye, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 interface PaywallProps {
   onSkip?: () => void;
@@ -11,6 +13,11 @@ interface PaywallProps {
 export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
   const { language } = useLanguage();
   const [, setLocation] = useLocation();
+  
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: api.getMe,
+  });
 
   const texts = {
     title: language === "it" ? "Passa a Premium" : "Upgrade to Premium",
@@ -61,7 +68,8 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
     if (onSkip) {
       onSkip();
     } else {
-      setLocation("/tenant");
+      const role = user?.role || "tenant";
+      setLocation(`/${role}`);
     }
   };
 

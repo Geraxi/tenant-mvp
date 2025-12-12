@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   // Premium/subscription fields
   isPremium: boolean("is_premium").default(false),
   swipeCount: integer("swipe_count").default(0),
+  lastSwipeReset: timestamp("last_swipe_reset").defaultNow(),
   premiumUntil: timestamp("premium_until"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
