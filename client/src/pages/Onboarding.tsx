@@ -629,6 +629,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Parlaci di te" : "Tell us about yourself"}
@@ -753,6 +761,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Le tue proprieta" : "About your property"}
@@ -811,6 +827,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Aggiungi le tue foto" : "Add your photos"}
@@ -886,6 +910,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Preferenze casa" : "Property preferences"}
@@ -1036,6 +1068,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Preferenze coinquilino" : "Roommate preferences"}
@@ -1171,6 +1211,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-2">
                   {language === "it" ? "Il tuo posto" : "Your place"}
@@ -1327,6 +1375,14 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col justify-center items-center text-center"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
