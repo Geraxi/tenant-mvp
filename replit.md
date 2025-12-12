@@ -42,12 +42,15 @@ The server handles authentication, user management, property/roommate CRUD opera
 - **Schema Location:** `shared/schema.ts` contains all table definitions
 - **Migrations:** Managed via `drizzle-kit push`
 - **Key Tables:**
-  - `users` - User profiles with role (tenant/landlord)
+  - `users` - User profiles with role (tenant/landlord), includes stripeCustomerId and stripeSubscriptionId for payments
   - `properties` - Rental property listings
   - `roommates` - Tenant profiles seeking roommates
   - `swipes` - User swipe actions (like/skip)
   - `matches` - Mutual matches between users
   - `favorites` - Saved properties
+  - `messages` - Chat messages between matched users
+  - `reports` - User reports for content moderation
+  - `blocks` - Blocked users list
   - `sessions` - Authentication session storage
 
 ### Authentication Flow
@@ -86,3 +89,26 @@ The server handles authentication, user management, property/roommate CRUD opera
 - `@replit/vite-plugin-runtime-error-modal` - Error overlay in development
 - `@replit/vite-plugin-cartographer` - Development tooling
 - `@replit/vite-plugin-dev-banner` - Development environment indicator
+
+### Payment Processing
+- **Stripe** - Subscription payments for Premium features
+- **Pricing:**
+  - Monthly: €12.99/month
+  - Yearly: €95.88/year (€7.99/month equivalent)
+- **Environment Variables:**
+  - `VITE_STRIPE_MONTHLY_PRICE_ID` - Stripe monthly price ID
+  - `VITE_STRIPE_YEARLY_PRICE_ID` - Stripe yearly price ID
+
+## Premium Features
+- **Free Users:** 10 swipes per day, resets daily
+- **Premium Users:** Unlimited swipes, see who liked you, priority views, unlimited messages
+
+## Chat System
+- Real-time messaging between matched users
+- Block checking prevents messaging blocked users
+- Read receipts for messages
+
+## Content Moderation
+- Report users with reason and description
+- Block/unblock users
+- Blocked users cannot send messages or view each other's profiles

@@ -1,4 +1,4 @@
-import type { User, Property, Roommate, Match, Favorite } from "@shared/schema";
+import type { User, Property, Roommate, Match, Favorite, Message } from "@shared/schema";
 import { supabase } from "./supabase";
 
 export class ApiError extends Error {
@@ -85,7 +85,10 @@ export const api = {
     }),
 
   // Matches
-  getMatches: (): Promise<Match[]> => fetchApi('/api/matches'),
+  getMatches: (): Promise<(Match & { otherUserId: string; otherUser: { id: string; firstName: string | null; lastName: string | null; profilePhoto: string | null } | null })[]> => fetchApi('/api/matches'),
+
+  getMatch: (matchId: string): Promise<Match & { otherUserId: string; otherUser: { id: string; firstName: string | null; lastName: string | null; profilePhoto: string | null } | null }> =>
+    fetchApi(`/api/matches/${matchId}`),
 
   // Favorites
   getFavorites: (): Promise<Property[]> => fetchApi('/api/favorites'),
@@ -108,4 +111,55 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ base64, fileName, contentType }),
     }),
+
+  // Messages
+  getMatchMessages: (matchId: string): Promise<Message[]> =>
+    fetchApi(`/api/matches/${matchId}/messages`),
+
+  sendMessage: (matchId: string, content: string): Promise<Message> =>
+    fetchApi(`/api/matches/${matchId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+
+  markMessageRead: (messageId: string) =>
+    fetchApi(`/api/messages/${messageId}/read`, { method: 'PATCH' }),
+
+  getUnreadCount: (): Promise<{ count: number }> =>
+    fetchApi('/api/messages/unread-count'),
+
+  // Reports
+  reportUser: (reportedUserId: string, reason: string, description?: string) =>
+    fetchApi('/api/reports', {
+      method: 'POST',
+      body: JSON.stringify({ reportedUserId, reason, description }),
+    }),
+
+  // Blocks
+  blockUser: (blockedId: string) =>
+    fetchApi('/api/blocks', {
+      method: 'POST',
+      body: JSON.stringify({ blockedId }),
+    }),
+
+  unblockUser: (blockedId: string) =>
+    fetchApi(`/api/blocks/${blockedId}`, { method: 'DELETE' }),
+
+  getBlocks: () => fetchApi('/api/blocks'),
+
+  // Stripe
+  getStripeConfig: (): Promise<{ publishableKey: string }> =>
+    fetchApi('/api/stripe/config'),
+
+  createCheckoutSession: (priceId: string): Promise<{ url: string }> =>
+    fetchApi('/api/stripe/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ priceId }),
+    }),
+
+  createPortalSession: (): Promise<{ url: string }> =>
+    fetchApi('/api/stripe/portal', { method: 'POST' }),
+
+  getSubscription: (): Promise<{ isPremium: boolean; premiumUntil: string | null; subscriptionId: string | null }> =>
+    fetchApi('/api/subscription'),
 };

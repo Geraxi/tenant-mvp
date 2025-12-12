@@ -38,7 +38,7 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
             <div className="mb-6">
               <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">New Matches</h2>
               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-2">
-                {matches.slice(0, 4).map((match) => (
+                {matches.slice(0, 4).map((match: any) => (
                   <button 
                     key={match.id} 
                     onClick={() => setLocation(`/chat/${match.id}`)}
@@ -47,11 +47,15 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
                   >
                     <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-primary p-0.5">
                        <div className="w-full h-full rounded-full bg-gray-300 overflow-hidden">
-                         <img src={`https://i.pravatar.cc/150?u=${match.id}`} className="w-full h-full object-cover" />
+                         <img 
+                           src={match.otherUser?.profilePhoto || `https://i.pravatar.cc/150?u=${match.otherUserId}`} 
+                           className="w-full h-full object-cover" 
+                           alt={match.otherUser?.firstName || "User"}
+                         />
                        </div>
                     </div>
                     <span className="text-xs font-semibold truncate w-full text-center">
-                      {match.id.substring(0, 8)}
+                      {match.otherUser?.firstName || "User"}
                     </span>
                   </button>
                 ))}
@@ -62,7 +66,7 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
             <div className="space-y-2">
                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Messages</h2>
                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                 {matches.map((match) => (
+                 {matches.map((match: any) => (
                    <button 
                      key={match.id} 
                      onClick={() => setLocation(`/chat/${match.id}`)}
@@ -70,11 +74,17 @@ export default function Matches({ role }: { role: "tenant" | "landlord" }) {
                      data-testid={`match-message-${match.id}`}
                    >
                      <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                       <img src={`https://i.pravatar.cc/150?u=${match.id}`} className="w-full h-full object-cover" />
+                       <img 
+                         src={match.otherUser?.profilePhoto || `https://i.pravatar.cc/150?u=${match.otherUserId}`} 
+                         className="w-full h-full object-cover"
+                         alt={match.otherUser?.firstName || "User"}
+                       />
                      </div>
                      <div className="flex-1 min-w-0">
                        <div className="flex justify-between items-baseline mb-1">
-                         <h3 className="font-bold text-gray-900 truncate">Match {match.id.substring(0, 8)}</h3>
+                         <h3 className="font-bold text-gray-900 truncate">
+                           {match.otherUser?.firstName || "User"} {match.otherUser?.lastName || ""}
+                         </h3>
                          <span className="text-xs text-gray-400 font-medium">New</span>
                        </div>
                        <p className="text-sm text-gray-500 truncate">Start a conversation...</p>

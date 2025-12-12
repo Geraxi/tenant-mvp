@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { WebhookHandlers } from "./webhookHandlers";
 
 const app = express();
 const httpServer = createServer(app);
@@ -11,6 +12,19 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const signature = req.headers["stripe-signature"] as string;
+    const uuid = (req.headers["x-stripe-webhook-uuid"] || crypto.randomUUID()) as string;
+    
+    await WebhookHandlers.processWebhook(req.body, signature, uuid);
+    res.json({ received: true });
+  } catch (error: any) {
+    console.error("Webhook error:", error.message);
+    res.status(400).json({ error: error.message });
+  }
+});
 
 app.use(
   express.json({

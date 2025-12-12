@@ -7,7 +7,12 @@ import {
   insertRoommateSchema,
   insertSwipeSchema,
   insertFavoriteSchema,
+  insertMessageSchema,
+  insertReportSchema,
+  insertBlockSchema,
 } from "@shared/schema";
+import { stripeService } from "./stripeService";
+import { getStripePublishableKey } from "./stripeClient";
 
 export async function registerRoutes(
   server: HTTPServer,
@@ -251,8 +256,52 @@ export async function registerRoutes(
   // MATCH ROUTES
   app.get("/api/matches", isAuthenticated, async (req: any, res) => {
     try {
-      const matches = await storage.getUserMatches(req.user.claims.sub);
-      res.json(matches);
+      const userId = req.user.claims.sub;
+      const matches = await storage.getUserMatches(userId);
+      
+      const matchesWithOtherUser = await Promise.all(matches.map(async (match) => {
+        const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
+        const otherUser = await storage.getUser(otherUserId);
+        return {
+          ...match,
+          otherUserId,
+          otherUser: otherUser ? {
+            id: otherUser.id,
+            firstName: otherUser.firstName,
+            lastName: otherUser.lastName,
+            profilePhoto: otherUser.profilePhoto,
+          } : null,
+        };
+      }));
+      
+      res.json(matchesWithOtherUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/matches/:matchId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const match = await storage.getMatch(req.params.matchId);
+      
+      if (!match || (match.user1Id !== userId && match.user2Id !== userId)) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
+      const otherUser = await storage.getUser(otherUserId);
+      
+      res.json({
+        ...match,
+        otherUserId,
+        otherUser: otherUser ? {
+          id: otherUser.id,
+          firstName: otherUser.firstName,
+          lastName: otherUser.lastName,
+          profilePhoto: otherUser.profilePhoto,
+        } : null,
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -303,6 +352,251 @@ export async function registerRoutes(
     try {
       const isFavorited = await storage.isFavorited(req.user.claims.sub, req.params.propertyId);
       res.json({ isFavorited });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // CHAT/MESSAGE ROUTES
+  app.get("/api/matches/:matchId/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const match = await storage.getMatch(req.params.matchId);
+      
+      if (!match || (match.user1Id !== userId && match.user2Id !== userId)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
+      const isBlocked = await storage.isBlocked(otherUserId, userId);
+      const hasBlocked = await storage.isBlocked(userId, otherUserId);
+      
+      if (isBlocked || hasBlocked) {
+        return res.status(403).json({ message: "Cannot access messages with blocked user" });
+      }
+
+      const messages = await storage.getMatchMessages(req.params.matchId);
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/matches/:matchId/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const match = await storage.getMatch(req.params.matchId);
+      
+      if (!match || (match.user1Id !== userId && match.user2Id !== userId)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
+      const isBlocked = await storage.isBlocked(otherUserId, userId);
+      const hasBlocked = await storage.isBlocked(userId, otherUserId);
+      
+      if (isBlocked || hasBlocked) {
+        return res.status(403).json({ message: "Cannot send messages to this user" });
+      }
+
+      const result = insertMessageSchema.safeParse({
+        matchId: req.params.matchId,
+        senderId: userId,
+        content: req.body.content,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid message", errors: result.error });
+      }
+
+      const message = await storage.createMessage(result.data);
+      res.json(message);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/messages/:messageId/read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const messageId = req.params.messageId;
+      
+      const existingMessage = await storage.getMessage(messageId);
+      if (!existingMessage) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      const match = await storage.getMatch(existingMessage.matchId);
+      if (!match || (match.user1Id !== userId && match.user2Id !== userId)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const message = await storage.markMessageAsRead(messageId);
+      res.json(message);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/messages/unread-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const count = await storage.getUnreadCount(req.user.claims.sub);
+      res.json({ count });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // REPORT ROUTES
+  app.post("/api/reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const reportedUserId = req.body.reportedUserId;
+      
+      if (userId === reportedUserId) {
+        return res.status(400).json({ message: "Cannot report yourself" });
+      }
+
+      const result = insertReportSchema.safeParse({
+        reporterId: userId,
+        reportedUserId,
+        reason: req.body.reason,
+        description: req.body.description,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid report", errors: result.error });
+      }
+
+      const report = await storage.createReport(result.data);
+      res.json(report);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // BLOCK ROUTES
+  app.post("/api/blocks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const blockedId = req.body.blockedId;
+      
+      if (userId === blockedId) {
+        return res.status(400).json({ message: "Cannot block yourself" });
+      }
+      
+      const alreadyBlocked = await storage.isBlocked(userId, blockedId);
+      if (alreadyBlocked) {
+        return res.status(400).json({ message: "User already blocked" });
+      }
+
+      const result = insertBlockSchema.safeParse({
+        blockerId: userId,
+        blockedId,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid block", errors: result.error });
+      }
+
+      const block = await storage.createBlock(result.data);
+      res.json(block);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/blocks/:blockedId", isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.removeBlock(req.user.claims.sub, req.params.blockedId);
+      res.json({ message: "Unblocked" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/blocks", isAuthenticated, async (req: any, res) => {
+    try {
+      const blocks = await storage.getUserBlocks(req.user.claims.sub);
+      res.json(blocks);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // STRIPE ROUTES
+  app.get("/api/stripe/config", async (req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/stripe/checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { priceId } = req.body;
+      if (!priceId) {
+        return res.status(400).json({ message: "Price ID required" });
+      }
+
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(user.email || "", userId);
+        await storage.updateUser(userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/${user.role}?checkout=success`,
+        `${baseUrl}/${user.role}?checkout=cancelled`
+      );
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/stripe/portal", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: "No subscription found" });
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const session = await stripeService.createCustomerPortalSession(
+        user.stripeCustomerId,
+        `${baseUrl}/${user.role}/profile`
+      );
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      res.json({ 
+        isPremium: user?.isPremium || false,
+        premiumUntil: user?.premiumUntil,
+        subscriptionId: user?.stripeSubscriptionId
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

@@ -1,22 +1,48 @@
 import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
-import { Crown, Check, X, Sparkles, Heart, Eye, MessageCircle } from "lucide-react";
+import { Crown, Check, Sparkles, Heart, Eye, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaywallProps {
   onSkip?: () => void;
   reason?: "signup" | "swipe_limit";
 }
 
+const PRICE_IDS = {
+  monthly: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID || "price_monthly",
+  yearly: import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID || "price_yearly",
+};
+
 export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
   const { language } = useLanguage();
   const [, setLocation] = useLocation();
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const { toast } = useToast();
   
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
     queryFn: api.getMe,
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: (priceId: string) => api.createCheckoutSession(priceId),
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === "it" ? "Errore" : "Error",
+        description: error.message || (language === "it" ? "Si e verificato un errore" : "An error occurred"),
+        variant: "destructive",
+      });
+      setSelectedPlan(null);
+    },
   });
 
   const texts = {
@@ -60,8 +86,10 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
     },
   ];
 
-  const handleSubscribe = (plan: "monthly" | "yearly") => {
-    console.log("Subscribe to:", plan);
+  const handleSubscribe = async (plan: "monthly" | "yearly") => {
+    setSelectedPlan(plan);
+    const priceId = PRICE_IDS[plan];
+    checkoutMutation.mutate(priceId);
   };
 
   const handleSkip = () => {
@@ -123,7 +151,8 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
         >
           <button
             onClick={() => handleSubscribe("yearly")}
-            className="w-full relative bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg"
+            disabled={checkoutMutation.isPending}
+            className="w-full relative bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg disabled:opacity-70"
             data-testid="button-subscribe-yearly"
           >
             <span className="absolute -top-2 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -134,16 +163,22 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
                 <div className="font-bold text-lg">{texts.yearly}</div>
                 <div className="text-blue-200 text-sm">12 {language === "it" ? "mesi" : "months"}</div>
               </div>
-              <div className="text-right">
-                <div className="font-black text-2xl">€7.99<span className="text-sm font-normal">/{language === "it" ? "mese" : "mo"}</span></div>
-                <div className="text-blue-200 text-sm line-through">€12.99/{language === "it" ? "mese" : "mo"}</div>
+              <div className="text-right flex items-center gap-2">
+                {selectedPlan === "yearly" && checkoutMutation.isPending && (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                )}
+                <div>
+                  <div className="font-black text-2xl">€7.99<span className="text-sm font-normal">/{language === "it" ? "mese" : "mo"}</span></div>
+                  <div className="text-blue-200 text-sm line-through">€12.99/{language === "it" ? "mese" : "mo"}</div>
+                </div>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => handleSubscribe("monthly")}
-            className="w-full bg-white border-2 border-gray-200 p-5 rounded-2xl"
+            disabled={checkoutMutation.isPending}
+            className="w-full bg-white border-2 border-gray-200 p-5 rounded-2xl disabled:opacity-70"
             data-testid="button-subscribe-monthly"
           >
             <div className="flex justify-between items-center">
@@ -151,7 +186,10 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
                 <div className="font-bold text-lg text-gray-900">{texts.monthly}</div>
                 <div className="text-gray-500 text-sm">1 {language === "it" ? "mese" : "month"}</div>
               </div>
-              <div className="text-right">
+              <div className="text-right flex items-center gap-2">
+                {selectedPlan === "monthly" && checkoutMutation.isPending && (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                )}
                 <div className="font-black text-2xl text-gray-900">€12.99<span className="text-sm font-normal text-gray-500">/{language === "it" ? "mese" : "mo"}</span></div>
               </div>
             </div>

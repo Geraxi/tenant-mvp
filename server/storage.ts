@@ -7,6 +7,9 @@ import {
   swipes,
   matches,
   favorites,
+  messages,
+  reports,
+  blocks,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -20,12 +23,19 @@ import {
   type InsertMatch,
   type Favorite,
   type InsertFavorite,
+  type Message,
+  type InsertMessage,
+  type Report,
+  type InsertReport,
+  type Block,
+  type InsertBlock,
 } from "@shared/schema";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
@@ -64,6 +74,23 @@ export interface IStorage {
   removeFavorite(userId: string, propertyId: string): Promise<boolean>;
   getUserFavorites(userId: string): Promise<Favorite[]>;
   isFavorited(userId: string, propertyId: string): Promise<boolean>;
+
+  // Messages
+  createMessage(message: InsertMessage): Promise<Message>;
+  getMessage(messageId: string): Promise<Message | undefined>;
+  getMatchMessages(matchId: string): Promise<Message[]>;
+  markMessageAsRead(messageId: string): Promise<Message | undefined>;
+  getUnreadCount(userId: string): Promise<number>;
+
+  // Reports
+  createReport(report: InsertReport): Promise<Report>;
+  getUserReports(userId: string): Promise<Report[]>;
+
+  // Blocks
+  createBlock(block: InsertBlock): Promise<Block>;
+  isBlocked(blockerId: string, blockedId: string): Promise<boolean>;
+  getUserBlocks(userId: string): Promise<Block[]>;
+  removeBlock(blockerId: string, blockedId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -75,6 +102,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId)).limit(1);
     return result[0];
   }
 
@@ -303,6 +335,87 @@ export class DatabaseStorage implements IStorage {
       )
     ).limit(1);
     return result.length > 0;
+  }
+
+  // Messages
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const result = await db.insert(messages).values(message).returning();
+    return result[0];
+  }
+
+  async getMessage(messageId: string): Promise<Message | undefined> {
+    const result = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+    return result[0];
+  }
+
+  async getMatchMessages(matchId: string): Promise<Message[]> {
+    return await db.select().from(messages)
+      .where(eq(messages.matchId, matchId))
+      .orderBy(messages.createdAt);
+  }
+
+  async markMessageAsRead(messageId: string): Promise<Message | undefined> {
+    const result = await db.update(messages)
+      .set({ readAt: new Date() })
+      .where(eq(messages.id, messageId))
+      .returning();
+    return result[0];
+  }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    const userMatches = await this.getUserMatches(userId);
+    const matchIds = userMatches.map(m => m.id);
+    
+    let count = 0;
+    for (const matchId of matchIds) {
+      const unread = await db.select().from(messages)
+        .where(and(
+          eq(messages.matchId, matchId),
+          eq(messages.readAt, null as any)
+        ));
+      count += unread.filter(m => m.senderId !== userId).length;
+    }
+    return count;
+  }
+
+  // Reports
+  async createReport(report: InsertReport): Promise<Report> {
+    const result = await db.insert(reports).values(report).returning();
+    return result[0];
+  }
+
+  async getUserReports(userId: string): Promise<Report[]> {
+    return await db.select().from(reports).where(eq(reports.reporterId, userId));
+  }
+
+  // Blocks
+  async createBlock(block: InsertBlock): Promise<Block> {
+    const result = await db.insert(blocks).values(block).returning();
+    return result[0];
+  }
+
+  async isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+    const result = await db.select().from(blocks).where(
+      and(eq(blocks.blockerId, blockerId), eq(blocks.blockedId, blockedId))
+    ).limit(1);
+    return result.length > 0;
+  }
+
+  async getUserBlocks(userId: string): Promise<Block[]> {
+    return await db.select().from(blocks).where(eq(blocks.blockerId, userId));
+  }
+
+  async removeBlock(blockerId: string, blockedId: string): Promise<boolean> {
+    const result = await db.delete(blocks).where(
+      and(eq(blocks.blockerId, blockerId), eq(blocks.blockedId, blockedId))
+    ).returning();
+    return result.length > 0;
+  }
+
+  // Match by ID
+  async getMatch(matchId: string): Promise<Match | undefined> {
+    const result = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+    return result[0];
   }
 }
 

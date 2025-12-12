@@ -44,9 +44,12 @@ waitForPort = 5000
 
 [agent]
 mockupState = "FULLSTACK"
+integrations = ["stripe:2.0.0"]
 
 [userenv]
 
 [userenv.shared]
 VITE_SUPABASE_URL = "https://iohszsmnkbxpauqqdudy.supabase.co"
 VITE_SUPABASE_ANON_KEY = "sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1"
+VITE_STRIPE_MONTHLY_PRICE_ID = "price_1SdavlL39TAvds9faZagFt9V"
+VITE_STRIPE_YEARLY_PRICE_ID = "price_1SdavlL39TAvds9fB2515Anx"
