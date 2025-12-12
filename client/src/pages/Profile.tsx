@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { initializePushNotifications, isPushSupported, getPushPermissionState } from "@/lib/pushNotifications";
 import { initializeCapacitorPush, isCapacitorPlatform } from "@/lib/capacitorPush";
+import { api } from "@/lib/api";
 
 export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const { t, language, setLanguage } = useLanguage();
@@ -48,8 +49,23 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
     window.location.href = "/";
   };
 
-  const switchRole = () => {
-    setLocation(role === "tenant" ? "/landlord" : "/tenant");
+  const [switchingRole, setSwitchingRole] = useState(false);
+
+  const switchRole = async () => {
+    if (!user || switchingRole) return;
+    
+    const newRole = role === "tenant" ? "landlord" : "tenant";
+    setSwitchingRole(true);
+    
+    try {
+      await api.updateUser(user.id, { role: newRole });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setLocation(`/${newRole}`);
+    } catch (error) {
+      console.error('Failed to switch role:', error);
+    } finally {
+      setSwitchingRole(false);
+    }
   };
 
   return (
@@ -82,14 +98,16 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           <button 
             onClick={switchRole}
-            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50"
+            disabled={switchingRole}
+            className="w-full p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors border-b border-gray-50 disabled:opacity-50"
+            data-testid="button-switch-role"
           >
             <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
-              <RefreshCcw size={20} />
+              <RefreshCcw size={20} className={switchingRole ? "animate-spin" : ""} />
             </div>
             <div className="flex-1 text-left">
-              <h3 className="font-bold text-gray-900">Switch Role</h3>
-              <p className="text-xs text-gray-500">Currently: {role === "tenant" ? "Tenant" : "Landlord"}</p>
+              <h3 className="font-bold text-gray-900">Switch to {role === "tenant" ? "Landlord" : "Tenant"}</h3>
+              <p className="text-xs text-gray-500">{switchingRole ? "Switching..." : `Currently: ${role === "tenant" ? "Tenant" : "Landlord"}`}</p>
             </div>
             <ChevronRight size={20} className="text-gray-300" />
           </button>
