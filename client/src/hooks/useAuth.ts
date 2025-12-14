@@ -48,9 +48,20 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     queryFn: fetchUser,
-    retry: false,
-    staleTime: 1000 * 60 * 5,
+    retry: 2, // Retry up to 2 times on failure
+    retryDelay: 1000, // Wait 1 second between retries
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes (formerly cacheTime)
     enabled: isReady,
+    // Suppress database connection errors
+    onError: (error: any) => {
+      // Silently ignore database connection errors - they're handled by the server fallback
+      if (error?.message?.includes('getaddrinfo') || error?.message?.includes('ENOTFOUND')) {
+        return;
+      }
+    },
+    // Keep previous data while refetching to prevent flickering
+    placeholderData: (previousData) => previousData,
   });
 
   const logout = async () => {

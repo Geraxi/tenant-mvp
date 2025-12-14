@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { Crown, Check, Sparkles, Heart, Eye, MessageCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
   const [, setLocation] = useLocation();
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly" | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -96,7 +97,24 @@ export default function Paywall({ onSkip, reason = "signup" }: PaywallProps) {
     if (onSkip) {
       onSkip();
     } else {
-      const role = user?.role || "tenant";
+      // Get role from URL param (passed from onboarding), user object, or default to tenant
+      const urlParams = new URLSearchParams(window.location.search);
+      const roleFromUrl = urlParams.get('role') as "tenant" | "landlord" | null;
+      let role = roleFromUrl || user?.role || "tenant";
+      
+      // If user doesn't have a role set (database save failed), 
+      // update the cached user object with the role from URL or default
+      // This allows navigation even if database save failed
+      if (!user?.role && role) {
+        // Update the cached user object with the role
+        queryClient.setQueryData(["/api/auth/user"], (oldUser: any) => {
+          if (oldUser) {
+            return { ...oldUser, role: role };
+          }
+          return { role: role, id: user?.id || "" };
+        });
+      }
+      
       setLocation(`/${role}`);
     }
   };

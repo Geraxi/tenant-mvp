@@ -79,16 +79,26 @@ export function FilterSheet({ type, onApply, trigger, currentFilters }: FilterSh
             <>
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-3 block">
-                  Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}/mo
+                  Price Range: ${filters.priceRange[0].toLocaleString()} - ${filters.priceRange[1].toLocaleString()}/mo
                 </label>
-                <Slider
-                  value={filters.priceRange}
-                  onValueChange={(value) => setFilters({ ...filters, priceRange: value as [number, number] })}
-                  min={0}
-                  max={10000}
-                  step={100}
-                  className="mt-2"
-                />
+                <div className="px-2">
+                  <Slider
+                    value={filters.priceRange}
+                    onValueChange={(value) => {
+                      if (Array.isArray(value) && value.length === 2) {
+                        setFilters({ ...filters, priceRange: [value[0], value[1]] as [number, number] });
+                      }
+                    }}
+                    min={0}
+                    max={10000}
+                    step={100}
+                    className="mt-2"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1 px-2">
+                  <span>$0</span>
+                  <span>$10,000</span>
+                </div>
               </div>
 
               <div>
@@ -137,14 +147,24 @@ export function FilterSheet({ type, onApply, trigger, currentFilters }: FilterSh
                 <label className="text-sm font-semibold text-gray-700 mb-3 block">
                   Age Range: {filters.ageRange[0]} - {filters.ageRange[1]} years
                 </label>
-                <Slider
-                  value={filters.ageRange}
-                  onValueChange={(value) => setFilters({ ...filters, ageRange: value as [number, number] })}
-                  min={18}
-                  max={80}
-                  step={1}
-                  className="mt-2"
-                />
+                <div className="px-2">
+                  <Slider
+                    value={filters.ageRange}
+                    onValueChange={(value) => {
+                      if (Array.isArray(value) && value.length === 2) {
+                        setFilters({ ...filters, ageRange: [value[0], value[1]] as [number, number] });
+                      }
+                    }}
+                    min={18}
+                    max={80}
+                    step={1}
+                    className="mt-2"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1 px-2">
+                  <span>18</span>
+                  <span>80</span>
+                </div>
               </div>
 
               <div>
@@ -169,16 +189,26 @@ export function FilterSheet({ type, onApply, trigger, currentFilters }: FilterSh
 
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-3 block">
-                  Budget: ${filters.priceRange[0]} - ${filters.priceRange[1]}/mo
+                  Budget: ${filters.priceRange[0].toLocaleString()} - ${filters.priceRange[1].toLocaleString()}/mo
                 </label>
-                <Slider
-                  value={filters.priceRange}
-                  onValueChange={(value) => setFilters({ ...filters, priceRange: value as [number, number] })}
-                  min={0}
-                  max={5000}
-                  step={50}
-                  className="mt-2"
-                />
+                <div className="px-2">
+                  <Slider
+                    value={filters.priceRange}
+                    onValueChange={(value) => {
+                      if (Array.isArray(value) && value.length === 2) {
+                        setFilters({ ...filters, priceRange: [value[0], value[1]] as [number, number] });
+                      }
+                    }}
+                    min={0}
+                    max={5000}
+                    step={50}
+                    className="mt-2"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1 px-2">
+                  <span>$0</span>
+                  <span>$5,000</span>
+                </div>
               </div>
             </>
           )}

@@ -86,13 +86,69 @@ export default function Auth() {
     setLoading(true);
     setError(null);
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    console.log('Attempting login with:', { 
+      email: email.trim(), 
+      emailLength: email.trim().length,
+      passwordLength: password.length
+    });
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: password,
     });
     
     if (error) {
-      setError(language === "it" ? "Email o password non validi" : "Invalid email or password");
+      console.error('Login error details:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
+      setError(language === "it" ? "Email o password non validi" : `Invalid email or password: ${error.message}`);
+      setLoading(false);
+      return;
+    }
+    
+    console.log('Login successful:', { 
+      userEmail: data?.user?.email,
+      userId: data?.user?.id,
+      hasSession: !!data?.session 
+    });
+
+    // On successful login, wait for session to be established then redirect
+    if (data?.session) {
+      console.log('Login successful, waiting for auth state...');
+      setLoading(false);
+      
+      // Wait a bit for the session to be fully established
+      // The onAuthStateChange handler will handle the redirect
+      // But we'll also set a fallback redirect
+      setTimeout(async () => {
+        try {
+          // Try to fetch user data first
+          const response = await fetch("/api/auth/user", {
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`,
+            },
+          });
+          
+          if (response.ok) {
+            const user = await response.json();
+            if (user?.role) {
+              setLocation(`/${user.role}`);
+            } else {
+              setLocation("/onboarding");
+            }
+          } else {
+            // If user fetch fails, still redirect to onboarding
+            setLocation("/onboarding");
+          }
+        } catch (err) {
+          console.error('Error fetching user after login:', err);
+          // Fallback: redirect to onboarding anyway
+          setLocation("/onboarding");
+        }
+      }, 500);
+      return;
     }
     setLoading(false);
   };
@@ -114,10 +170,31 @@ export default function Auth() {
         }),
       });
 
-      const data = await response.json();
+      // Check if response has content before parsing
+      const contentType = response.headers.get('content-type');
+      let data: any = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            setError(language === "it" ? "Errore nella risposta del server" : "Server response error");
+            setLoading(false);
+            return;
+          }
+        }
+      }
 
       if (!response.ok) {
-        setError(data.message || 'Failed to create account');
+        if (response.status === 404) {
+          setError(language === "it" 
+            ? "Server API non disponibile. Assicurati che il server sia in esecuzione." 
+            : "API server not available. Make sure the server is running.");
+        } else {
+          setError(data.message || (language === "it" ? "Impossibile creare l'account" : 'Failed to create account'));
+        }
         setLoading(false);
         return;
       }
@@ -135,7 +212,17 @@ export default function Auth() {
 
       setLocation("/onboarding");
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      if (err.message?.includes('JSON') || err.message?.includes('Unexpected end')) {
+        setError(language === "it" 
+          ? "Impossibile connettersi al server. Assicurati che il server sia in esecuzione." 
+          : "Cannot connect to server. Make sure the server is running.");
+      } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
+        setError(language === "it" 
+          ? "Errore di connessione. Controlla la tua connessione di rete." 
+          : "Connection error. Please check your network connection.");
+      } else {
+        setError(err.message || (language === "it" ? "Si è verificato un errore" : 'An error occurred'));
+      }
     }
     setLoading(false);
   };
@@ -218,6 +305,17 @@ export default function Auth() {
                 {loading ? "..." : texts.signIn}
               </button>
             </form>
+            <p className="text-center text-sm text-gray-600 mt-4">
+              {language === "it" ? "Non hai un account? " : "Don't have an account? "}
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className="text-blue-500 font-semibold hover:underline"
+                data-testid="link-signup-from-login"
+              >
+                {texts.signUp}
+              </button>
+            </p>
           </div>
         </motion.div>
       </div>
@@ -308,6 +406,17 @@ export default function Auth() {
               >
                 {loading ? "..." : texts.signUp}
               </button>
+              <p className="text-center text-sm text-gray-600 mt-4">
+                {language === "it" ? "Hai già un account? " : "Already have an account? "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="text-blue-500 font-semibold hover:underline"
+                  data-testid="link-login-from-signup"
+                >
+                  {texts.signIn}
+                </button>
+              </p>
               <p className="text-center text-xs text-gray-500 mt-2">
                 {language === "it" ? "Registrandoti accetti i nostri " : "By signing up you agree to our "}
                 <a href="/terms" className="text-blue-500 underline" data-testid="link-terms-signup">

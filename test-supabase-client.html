@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <script>
+    const supabase = supabase.createClient(
+      'https://iohszsmnkbxpauqqdudy.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvaHN6c21ua2J4cGF1cXFkdWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMDcwMTMsImV4cCI6MjA4MDg4MzAxM30.ubRLz7xBU2L906pvgcFeUWbhxaF7gJ-yCz9nxZ5GVPY'
+    );
+    
+    supabase.auth.signInWithPassword({
+      email: 'umbertogeraci0@gmail.com',
+      password: 'test123456'
+    }).then(({ data, error }) => {
+      if (error) {
+        console.error('Error:', error.message);
+      } else {
+        console.log('Success:', data.user.email);
+      }
+    });
+  </script>
+</body>
+</html>

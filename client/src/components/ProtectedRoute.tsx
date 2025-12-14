@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
@@ -8,6 +8,24 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const hasHadRoleRef = useRef(false);
+  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track if user has ever had a role (to prevent redirects on temporary fetch failures)
+  useEffect(() => {
+    if (user?.role) {
+      hasHadRoleRef.current = true;
+    }
+  }, [user?.role]);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -33,8 +51,30 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     );
   }
 
-  if (!user?.role) {
-    window.location.href = "/onboarding";
+  // Only redirect to onboarding if:
+  // 1. User is authenticated
+  // 2. User has never had a role (not just a temporary fetch failure)
+  // 3. We've waited a bit to ensure it's not just a loading state
+  if (isAuthenticated && !user?.role && !hasHadRoleRef.current) {
+    // Add a small delay to avoid redirecting during token refresh
+    if (!redirectTimeoutRef.current) {
+      redirectTimeoutRef.current = setTimeout(() => {
+        // Double-check after delay
+        if (!user?.role && !hasHadRoleRef.current) {
+          window.location.href = "/onboarding";
+        }
+      }, 2000); // Wait 2 seconds before redirecting
+    }
+    
+    return (
+      <div className="min-h-full bg-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // If user had a role before but doesn't now (temporary fetch failure), show loading
+  if (isAuthenticated && !user?.role && hasHadRoleRef.current) {
     return (
       <div className="min-h-full bg-white flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
