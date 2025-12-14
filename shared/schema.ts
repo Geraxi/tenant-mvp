@@ -44,6 +44,12 @@ export const users = pgTable("users", {
   premiumUntil: timestamp("premium_until"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  // ID Verification fields
+  idDocument: text("id_document"),
+  selfie: text("selfie"),
+  verificationStatus: text("verification_status").default("pending"), // 'pending', 'approved', 'rejected'
+  verificationReviewedAt: timestamp("verification_reviewed_at"),
+  verificationNotes: text("verification_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -51,6 +51,47 @@ export async function registerRoutes(
     }
   });
 
+  // ADMIN: Review ID verification (simple - any authenticated user can review for now)
+  // In production, you'd add proper admin role checking
+  app.post("/api/admin/verify-user/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { status, notes } = req.body; // status: 'approved' or 'rejected'
+      
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'approved' or 'rejected'" });
+      }
+
+      const user = await storage.updateUser(req.params.id, {
+        verificationStatus: status,
+        verificationReviewedAt: new Date(),
+        verificationNotes: notes || null,
+      } as any);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: `Verification ${status}`, user });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get users pending verification (for admin review)
+  app.get("/api/admin/pending-verifications", isAuthenticated, async (req: any, res) => {
+    try {
+      // Get all users with pending verification
+      const allUsers = await storage.getAllUsers();
+      const pendingUsers = allUsers.filter((u: any) => 
+        u.verificationStatus === 'pending' && (u.idDocument || u.selfie)
+      );
+      
+      res.json(pendingUsers);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // PROPERTY ROUTES
   app.get("/api/properties", isAuthenticated, async (req: any, res) => {
     try {

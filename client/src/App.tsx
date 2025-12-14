@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import Auth from "@/pages/Auth";
 import RoleSelection from "@/pages/RoleSelection";
 import Onboarding from "@/pages/Onboarding";
+import ResetPassword from "@/pages/ResetPassword";
 import TenantHome from "@/pages/TenantHome";
 import Favorites from "@/pages/Favorites";
 import PropertyDetails from "@/pages/PropertyDetails";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/paywall">
         {() => <Paywall />}
       </Route>
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/role" component={RoleSelection} />
       <Route path="/onboarding" component={Onboarding} />
       

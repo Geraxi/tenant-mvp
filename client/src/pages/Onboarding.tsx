@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, User, Building2, Search, Heart, ShieldCheck, ArrowRight, MapPin, Euro, Calendar, Users, Home, CheckCircle2, Camera, Plus, X, Bed, Sofa, PawPrint, Cigarette, Moon, Music, Dumbbell, Coffee } from "lucide-react";
+import { ChevronRight, User, Building2, Search, Heart, ShieldCheck, ArrowRight, MapPin, Euro, Calendar, Users, Home, CheckCircle2, Camera, Plus, X, Bed, Sofa, PawPrint, Cigarette, Moon, Music, Dumbbell, Coffee, Key } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated, error: authError } = useAuth();
+  const { user, isLoading, isAuthenticated, error: authError, logout } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
@@ -69,11 +69,18 @@ export default function Onboarding() {
       leaseDuration: "" as "short" | "long" | "flexible" | "",
       maxTenants: "",
     },
+    // ID Verification
+    idDocument: "" as string,
+    selfie: "" as string,
   });
   
   const propertyImageInputRef = useRef<HTMLInputElement>(null);
+  const idDocumentInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPropertyImages, setUploadingPropertyImages] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingIdDocument, setUploadingIdDocument] = useState(false);
+  const [uploadingSelfie, setUploadingSelfie] = useState(false);
 
   const toggleLookingFor = (option: "homes" | "roommates") => {
     setFormData(prev => {
@@ -360,12 +367,26 @@ export default function Onboarding() {
     setStep(prev => prev + 1);
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    if (step === 1) {
+      // On first step, log out and go to auth page
+      await logout();
+      setLocation("/");
+      return;
+    }
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  const handleRoleSelect = (role: "tenant" | "landlord") => {
-    setFormData({ ...formData, role });
+  const handleRoleSelect = (role: "tenant" | "landlord" | "roommate") => {
+    if (role === "roommate") {
+      // Roommate is a tenant looking for roommates
+      setFormData({ ...formData, role: "tenant", lookingFor: ["roommates"] });
+    } else if (role === "tenant") {
+      // Tenant looking for homes
+      setFormData({ ...formData, role: "tenant", lookingFor: ["homes"] });
+    } else {
+      setFormData({ ...formData, role });
+    }
     handleNext();
   };
 
@@ -414,11 +435,73 @@ export default function Onboarding() {
     }));
   };
 
+  const handleIdDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadingIdDocument(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        try {
+          const { url } = await api.uploadImage(base64, file.name, file.type);
+          setFormData(prev => ({
+            ...prev,
+            idDocument: url,
+          }));
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError);
+          setFormData(prev => ({
+            ...prev,
+            idDocument: base64,
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingIdDocument(false);
+    }
+  };
+
+  const handleSelfieUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadingSelfie(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        try {
+          const { url } = await api.uploadImage(base64, file.name, file.type);
+          setFormData(prev => ({
+            ...prev,
+            selfie: url,
+          }));
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError);
+          setFormData(prev => ({
+            ...prev,
+            selfie: base64,
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingSelfie(false);
+    }
+  };
+
   // Calculate total steps based on role and lookingFor
   const getTotalSteps = () => {
-    if (formData.role === "landlord") return 7; // Welcome, Security, Role, Info, TenantPrefs, Photos, Confirm
-    // Tenant: Welcome, Security, Role, Info, Photos, [PropertyPrefs], [RoommatePrefs], [MyPlace], Confirm
-    let steps = 6;
+    if (formData.role === "landlord") return 8; // Welcome, Security, Role, Info, TenantPrefs, ID Verification, Photos, Confirm
+    // Tenant: Welcome, Security, Role, Info, ID Verification, Photos, [PropertyPrefs], [RoommatePrefs], [MyPlace], Confirm
+    let steps = 7; // Added ID Verification step
     if (formData.lookingFor.includes("homes")) steps++;
     if (formData.lookingFor.includes("roommates")) {
       steps++; // roommate prefs
@@ -451,6 +534,9 @@ export default function Onboarding() {
         budget: formData.budget ? parseInt(formData.budget) : undefined,
         lookingFor: formData.role === "tenant" ? formData.lookingFor : undefined,
         images: formData.images.length > 0 ? formData.images : undefined,
+        ...(formData.idDocument && { idDocument: formData.idDocument } as any),
+        ...(formData.selfie && { selfie: formData.selfie } as any),
+        ...(formData.idDocument && formData.selfie && { verificationStatus: "pending" } as any),
         propertyPrefs: formData.role === "tenant" && formData.lookingFor.includes("homes") 
           ? {
               minPrice: formData.propertyPrefs.minPrice ? parseInt(formData.propertyPrefs.minPrice) : null,
@@ -611,17 +697,19 @@ export default function Onboarding() {
     if (step <= 3) return step;
     
     if (formData.role === "landlord") {
-      // Landlord: 4=Info, 5=TenantPrefs, 6=Photos, 7=Confirm
+      // Landlord: 4=Info, 5=TenantPrefs, 6=ID Verification, 7=Photos, 8=Confirm
       if (step === 4) return "landlord_info";
       if (step === 5) return "landlord_tenant_prefs";
-      if (step === 6) return "photos";
-      if (step === 7) return "confirm";
+      if (step === 6) return "id_verification";
+      if (step === 7) return "photos";
+      if (step === 8) return "confirm";
     } else {
-      // Tenant: 4=Info, 5=Photos, then preferences, then confirm
+      // Tenant: 4=Info, 5=ID Verification, 6=Photos, then preferences, then confirm
       if (step === 4) return "tenant_info";
-      if (step === 5) return "photos";
+      if (step === 5) return "id_verification";
+      if (step === 6) return "photos";
       
-      let currentStep = 6;
+      let currentStep = 7; // Updated after adding ID verification step
       if (formData.lookingFor.includes("homes")) {
         if (step === currentStep) return "property_prefs";
         currentStep++;
@@ -663,8 +751,23 @@ export default function Onboarding() {
         multiple
         className="hidden"
       />
+      <input 
+        type="file" 
+        ref={idDocumentInputRef}
+        onChange={handleIdDocumentUpload}
+        accept="image/*"
+        className="hidden"
+      />
+      <input 
+        type="file" 
+        ref={selfieInputRef}
+        onChange={handleSelfieUpload}
+        accept="image/*"
+        capture="user"
+        className="hidden"
+      />
 
-      <main className="flex-1 flex flex-col p-6 pt-12 relative z-10 overflow-y-auto">
+      <main className="flex-1 flex flex-col relative z-10 overflow-y-auto p-6 pt-12">
         <AnimatePresence mode="wait">
           {/* Step 1: Welcome */}
           {step === 1 && (
@@ -675,6 +778,15 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
+
               <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-64 h-64">
                   <div className="absolute inset-0 bg-blue-100 rounded-full opacity-50 blur-2xl animate-pulse" />
@@ -725,6 +837,15 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="flex-1 flex flex-col"
             >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
+
               <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-64 h-64 flex items-center justify-center">
                   <div className="absolute inset-0 bg-green-100 rounded-full opacity-50 blur-2xl animate-pulse" />
@@ -764,72 +885,73 @@ export default function Onboarding() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex-1 flex flex-col justify-center"
+              className="absolute inset-0 bg-blue-600 flex flex-col p-6"
             >
-              <button 
-                onClick={handleBack}
-                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 self-start"
-                data-testid="button-back"
-              >
-                <ChevronRight size={20} className="rotate-180" />
-                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
-              </button>
-              <div className="text-center mb-10">
-                <h2 className="text-2xl font-black text-gray-900 mb-2">
-                  {language === "it" ? "Cosa ti porta qui?" : "What brings you here?"}
-                </h2>
-                <p className="text-gray-500">
-                  {language === "it" ? "Questo ci aiuta a personalizzare la tua esperienza" : "This helps us personalize your experience"}
-                </p>
-              </div>
-
-              <div className="grid gap-4 mb-8">
+              <div className="flex-1 flex flex-col justify-center gap-5 mb-6">
+                {/* Inquilino Card - White */}
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleRoleSelect("tenant")}
-                  className="group p-6 rounded-3xl border-2 cursor-pointer transition-all border-gray-100 hover:border-primary/50 hover:bg-primary/5"
+                  className="bg-white rounded-3xl p-6 cursor-pointer shadow-xl"
                   data-testid="button-role-tenant"
                 >
-                  <div className="flex items-center gap-4 z-10 relative">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-colors bg-blue-100 text-primary group-hover:bg-primary group-hover:text-white">
-                      <User size={28} strokeWidth={2.5} />
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-3">
+                      <Home size={32} className="text-blue-600" strokeWidth={2.5} />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900">
-                        {language === "it" ? "Cerco casa" : "I'm looking for a place"}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {language === "it" ? "Trova case o coinquilini" : "Find homes or roommates"}
-                      </p>
-                    </div>
-                    <ChevronRight className="text-gray-300 group-hover:text-primary transition-colors" />
+                    <h3 className="text-xl font-black text-blue-600 mb-2">
+                      {language === "it" ? "Inquilino" : "Tenant"}
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-tight">
+                      {language === "it" 
+                        ? "Cerco una casa in affitto - Vedrò annunci di proprietari" 
+                        : "I'm looking for a house for rent - I'll see landlord ads"}
+                    </p>
                   </div>
                 </motion.div>
 
+                {/* Proprietario Card - Blue (blends with background) */}
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleRoleSelect("landlord")}
-                  className="group p-6 rounded-3xl border-2 cursor-pointer transition-all border-gray-100 hover:border-secondary/50 hover:bg-secondary/5"
+                  className="bg-blue-500 rounded-3xl p-6 cursor-pointer shadow-xl border-2 border-blue-400"
                   data-testid="button-role-landlord"
                 >
-                  <div className="flex items-center gap-4 z-10 relative">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-colors bg-purple-100 text-secondary group-hover:bg-secondary group-hover:text-white">
-                      <Building2 size={28} strokeWidth={2.5} />
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-blue-400 flex items-center justify-center mb-3">
+                      <Key size={32} className="text-white" strokeWidth={2.5} />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900">
-                        {language === "it" ? "Sono proprietario" : "I'm a landlord"}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {language === "it" ? "Pubblica annunci e trova inquilini" : "List properties and find tenants"}
-                      </p>
-                    </div>
-                    <ChevronRight className="text-gray-300 group-hover:text-secondary transition-colors" />
+                    <h3 className="text-xl font-black text-white mb-2">
+                      {language === "it" ? "Proprietario" : "Landlord"}
+                    </h3>
+                    <p className="text-sm text-blue-50 leading-tight">
+                      {language === "it" 
+                        ? "Affitto la mia proprietà - Vedrò profili di inquilini" 
+                        : "I rent my property - I'll see tenant profiles"}
+                    </p>
                   </div>
                 </motion.div>
               </div>
+
+              {/* Continue Button */}
+              <button
+                onClick={handleNext}
+                className="w-full bg-white text-blue-600 font-black text-base py-4 rounded-full shadow-xl mb-3 hover:bg-blue-50 active:scale-[0.98] transition-all"
+                data-testid="button-continue-role"
+              >
+                {language === "it" ? "Continua" : "Continue"}
+              </button>
+
+              {/* Back Link */}
+              <button 
+                onClick={handleBack}
+                className="text-center text-white/90 text-xs font-medium hover:text-white hover:underline transition-colors"
+                data-testid="button-back"
+              >
+                {language === "it" ? "Indietro" : "Back"}
+              </button>
             </motion.div>
           )}
 
@@ -1287,6 +1409,145 @@ export default function Onboarding() {
               >
                 {language === "it" ? "Continua" : "Continue"} <ArrowRight size={20} />
               </button>
+            </motion.div>
+          )}
+
+          {/* ID Verification Step */}
+          {currentContent === "id_verification" && (
+            <motion.div
+              key="id_verification"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex-1 flex flex-col"
+            >
+              <button 
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 self-start"
+                data-testid="button-back"
+              >
+                <ChevronRight size={20} className="rotate-180" />
+                <span className="font-medium">{language === "it" ? "Indietro" : "Back"}</span>
+              </button>
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gray-900 mb-2">
+                  {language === "it" ? "Verifica la tua identità" : "Verify your identity"}
+                </h2>
+                <p className="text-gray-500">
+                  {language === "it" 
+                    ? "Carica un documento d'identità e un selfie per la verifica" 
+                    : "Upload an ID document and a selfie for verification"}
+                </p>
+              </div>
+
+              <div className="space-y-6 mb-6">
+                {/* ID Document Upload */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-gray-700 ml-1">
+                    {language === "it" ? "Documento d'identità" : "ID Document"}
+                  </label>
+                  {formData.idDocument ? (
+                    <div className="relative rounded-2xl overflow-hidden bg-gray-100 border-2 border-primary">
+                      <img src={formData.idDocument} alt="ID Document" className="w-full h-48 object-contain" />
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, idDocument: "" }))}
+                        className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
+                        data-testid="button-remove-id"
+                      >
+                        <X size={16} className="text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => idDocumentInputRef.current?.click()}
+                      disabled={uploadingIdDocument}
+                      className="w-full h-48 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                      data-testid="button-upload-id"
+                    >
+                      {uploadingIdDocument ? (
+                        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+                      ) : (
+                        <>
+                          <Camera size={32} />
+                          <span className="font-medium">{language === "it" ? "Carica documento d'identità" : "Upload ID document"}</span>
+                          <span className="text-xs">{language === "it" ? "Carta d'identità, passaporto o patente" : "ID card, passport or driver's license"}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <input 
+                    ref={idDocumentInputRef}
+                    type="file" 
+                    onChange={handleIdDocumentUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Selfie Upload */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-gray-700 ml-1">
+                    {language === "it" ? "Selfie di conferma" : "Confirmation Selfie"}
+                  </label>
+                  {formData.selfie ? (
+                    <div className="relative rounded-2xl overflow-hidden bg-gray-100 border-2 border-primary">
+                      <img src={formData.selfie} alt="Selfie" className="w-full h-48 object-cover" />
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, selfie: "" }))}
+                        className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
+                        data-testid="button-remove-selfie"
+                      >
+                        <X size={16} className="text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => selfieInputRef.current?.click()}
+                      disabled={uploadingSelfie}
+                      className="w-full h-48 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                      data-testid="button-upload-selfie"
+                    >
+                      {uploadingSelfie ? (
+                        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+                      ) : (
+                        <>
+                          <User size={32} />
+                          <span className="font-medium">{language === "it" ? "Scatta un selfie" : "Take a selfie"}</span>
+                          <span className="text-xs">{language === "it" ? "Assicurati che il viso sia ben visibile" : "Make sure your face is clearly visible"}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <input 
+                    ref={selfieInputRef}
+                    type="file" 
+                    onChange={handleSelfieUpload}
+                    accept="image/*"
+                    capture="user"
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1" />
+
+              <div className="space-y-3">
+                <button 
+                  onClick={handleNext}
+                  disabled={!formData.idDocument || !formData.selfie}
+                  className="w-full bg-primary text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-next-id-verification"
+                >
+                  {language === "it" ? "Continua" : "Continue"} <ArrowRight size={20} />
+                </button>
+                {(!formData.idDocument || !formData.selfie) && (
+                  <p className="text-center text-sm text-gray-400">
+                    {language === "it" 
+                      ? "Carica sia il documento d'identità che il selfie per continuare" 
+                      : "Upload both ID document and selfie to continue"}
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
 

@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import logo from "@assets/logo-removebg-preview_1765398497308.png";
 import { supabase } from "@/lib/supabase";
-import { Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, Globe } from "lucide-react";
 
 type AuthMode = "welcome" | "login" | "signup";
 
@@ -18,6 +18,8 @@ export default function Auth() {
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   useEffect(() => {
     const handleAuthFlow = async () => {
@@ -227,6 +229,40 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetPasswordLoading(true);
+    setError(null);
+    
+    if (!email.trim()) {
+      setError(language === "it" ? "Inserisci la tua email" : "Please enter your email");
+      setResetPasswordLoading(false);
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setError(error.message || (language === "it" ? "Impossibile inviare l'email di reset" : "Failed to send reset email"));
+        setResetPasswordLoading(false);
+        return;
+      }
+
+      setError(null);
+      // Show success message
+      setError(language === "it" 
+        ? "Email di reset password inviata! Controlla la tua casella di posta." 
+        : "Password reset email sent! Please check your inbox.");
+      setResetPasswordMode(false);
+    } catch (err: any) {
+      setError(err.message || (language === "it" ? "Errore durante il reset della password" : "Error resetting password"));
+    }
+    setResetPasswordLoading(false);
+  };
+
   const texts = {
     welcome: language === "it" ? "Benvenuto su Tenant" : "Welcome to Tenant",
     tagline: language === "it" 
@@ -271,7 +307,7 @@ export default function Auth() {
               </div>
             )}
 
-            <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <form onSubmit={resetPasswordMode ? handleResetPassword : handleEmailSignIn} className="space-y-4">
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
@@ -284,38 +320,69 @@ export default function Auth() {
                   data-testid="input-email"
                 />
               </div>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="password"
-                  placeholder={texts.password}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  data-testid="input-password"
-                />
-              </div>
+              {!resetPasswordMode && (
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="password"
+                    placeholder={texts.password}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    data-testid="input-password"
+                  />
+                </div>
+              )}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || resetPasswordLoading}
                 className="w-full bg-blue-500 text-white font-bold py-4 rounded-2xl hover:bg-blue-600 transition-colors disabled:opacity-50"
                 data-testid="button-submit-login"
               >
-                {loading ? "..." : texts.signIn}
+                {loading || resetPasswordLoading ? "..." : (resetPasswordMode ? (language === "it" ? "Resetta Password" : "Reset Password") : texts.signIn)}
               </button>
             </form>
-            <p className="text-center text-sm text-gray-600 mt-4">
-              {language === "it" ? "Non hai un account? " : "Don't have an account? "}
-              <button
-                type="button"
-                onClick={() => setMode("signup")}
-                className="text-blue-500 font-semibold hover:underline"
-                data-testid="link-signup-from-login"
-              >
-                {texts.signUp}
-              </button>
-            </p>
+            <div className="space-y-2">
+              <p className="text-center text-sm text-gray-600 mt-4">
+                {language === "it" ? "Non hai un account? " : "Don't have an account? "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signup");
+                    setResetPasswordMode(false);
+                  }}
+                  className="text-blue-500 font-semibold hover:underline"
+                  data-testid="link-signup-from-login"
+                >
+                  {texts.signUp}
+                </button>
+              </p>
+              <p className="text-center text-sm text-gray-600">
+                {resetPasswordMode ? (
+                  <>
+                    {language === "it" ? "Ricordi la password? " : "Remember your password? "}
+                    <button
+                      type="button"
+                      onClick={() => setResetPasswordMode(false)}
+                      className="text-blue-500 font-semibold hover:underline"
+                      data-testid="link-back-to-login"
+                    >
+                      {language === "it" ? "Accedi" : "Sign In"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setResetPasswordMode(true)}
+                    className="text-blue-500 font-semibold hover:underline"
+                    data-testid="link-reset-password"
+                  >
+                    {language === "it" ? "Password dimenticata?" : "Forgot password?"}
+                  </button>
+                )}
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -438,10 +505,12 @@ export default function Auth() {
     <div className="min-h-full bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 flex flex-col items-center justify-center p-6 relative overflow-hidden">
       <button 
         onClick={() => setLanguage(language === "en" ? "it" : "en")}
-        className="absolute top-6 right-6 font-bold text-sm bg-white/20 text-white px-3 py-1 rounded-full hover:bg-white/30 transition-colors"
+        className="absolute top-6 right-6 flex items-center gap-2 font-semibold text-sm bg-white/20 text-white px-4 py-2 rounded-full hover:bg-white/30 transition-colors"
         data-testid="button-language-toggle"
+        title={language === "it" ? "Switch to English" : "Passa all'Italiano"}
       >
-        {language.toUpperCase()}
+        <Globe size={16} />
+        <span>{language === "it" ? "IT" : "EN"}</span>
       </button>
 
       <motion.div 

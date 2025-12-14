@@ -77,7 +77,22 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en");
+  // Default to Italian, with option to switch to English
+  const [language, setLanguage] = useState<Language>(() => {
+    // Check localStorage for saved preference
+    const saved = localStorage.getItem("app_language");
+    if (saved === "en" || saved === "it") {
+      return saved as Language;
+    }
+    // Default to Italian
+    return "it";
+  });
+
+  // Save language preference to localStorage
+  const handleSetLanguage = (lang: Language) => {
+    setLanguage(lang);
+    localStorage.setItem("app_language", lang);
+  };
 
   const t = (key: string) => {
     if (!translations[key]) return key;
@@ -85,7 +100,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );
