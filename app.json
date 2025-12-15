@@ -122,12 +122,9 @@
     "updates": {
       "fallbackToCacheTimeout": 0,
       "enabled": true,
-      "url": "<UNKNOWN>",
       "requestHeaders": {},
       "checkAutomatically": "ALWAYS",
       "useEmbeddedUpdate": true,
-      "codeSigningCertificate": "<UNKNOWN>",
-      "codeSigningMetadata": "<UNKNOWN>",
       "assetPatternsToBeBundled": [],
       "disableAntiBrickingMeasures": false
     },
@@ -136,7 +133,6 @@
         "projectId": "ec1dfa50-a8be-4a82-a7b0-b344e5a67aa4"
       }
     },
-    "runtimeVersion": "<UNKNOWN>",
     "owner": "ugeraci97"
   }
 }
