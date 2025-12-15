@@ -53,11 +53,11 @@
       },
       "permissions": [
         "android.permission.VIBRATE",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM"
       ]
@@ -133,9 +133,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "ec1dfa50-a8be-4a82-a7b0-b344e5a67aa4"
       }
     },
-    "runtimeVersion": "<UNKNOWN>"
+    "runtimeVersion": "<UNKNOWN>",
+    "owner": "ugeraci97"
   }
 }
