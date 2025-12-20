@@ -10,34 +10,3 @@
     }
   }
 }
-
-      "ios": {
-        "simulator": true
-      }
-    },
-    "production": {
-      "distribution": "store",
-      "ios": {
-        "autoIncrement": true,
-        "buildConfiguration": "Release"
-      },
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "${APPLE_ID}",
-        "ascAppId": "${ASC_APP_ID}",
-        "appleTeamId": "${APPLE_TEAM_ID}",
-        "ascApiKeyId": "${ASC_API_KEY_ID}",
-        "ascApiIssuerId": "${ASC_API_ISSUER_ID}",
-        "ascApiKeyPath": "${ASC_API_KEY_PATH}",
-        "autoSubmit": true,
-        "submitProfile": "production"
-      }
-    }
-  }
-}
