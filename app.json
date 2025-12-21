@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#007AFF"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.mytenant.tenantapp",
       "buildNumber": "1",
@@ -25,19 +23,12 @@
         "NSPhotoLibraryUsageDescription": "La libreria foto è necessaria per caricare immagini dell'immobile.",
         "NSPhotoLibraryAddUsageDescription": "L'app ha bisogno di salvare le foto che carichi nel tuo profilo.",
         "NSUserTrackingUsageDescription": "I dati vengono utilizzati per migliorare l'esperienza utente.",
-        "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": [
-          "en",
-          "it"
-        ],
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIRequiredDeviceCapabilities": [
-          "armv7"
-        ],
-        "UISupportedInterfaceOrientations": [
-          "UIInterfaceOrientationPortrait"
-        ],
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["en", "it"],
+        "UIRequiredDeviceCapabilities": ["armv7"],
+        "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
         "UISupportedInterfaceOrientations~ipad": [
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",
@@ -51,12 +42,7 @@
         "usesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.developer.applesignin": [
-          "Default"
-        ],
-        "com.apple.developer.in-app-payments": [
-          "merchant.com.mytenant.tenantapp"
-        ]
+        "com.apple.developer.applesignin": ["Default"]
       },
       "usesIcloudStorage": true
     },
@@ -94,7 +80,6 @@
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.com.mytenant.tenantapp",
           "enableGooglePay": false
         }
       ],
@@ -117,9 +102,7 @@
           "icon": "./local/assets/notification_icon.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": [
-            "./local/assets/notification_sound.wav"
-          ],
+          "sounds": ["./local/assets/notification_sound.wav"],
           "enableBackgroundRemoteNotifications": false
         }
       ],
@@ -135,13 +118,10 @@
       "typedRoutes": true
     },
     "updates": {
-      "fallbackToCacheTimeout": 0,
       "enabled": true,
-      "requestHeaders": {},
       "checkAutomatically": "ON_LOAD",
-      "useEmbeddedUpdate": true,
-      "assetPatternsToBeBundled": [],
-      "disableAntiBrickingMeasures": false
+      "fallbackToCacheTimeout": 0,
+      "useEmbeddedUpdate": true
     },
     "extra": {
       "eas": {
