@@ -23,12 +23,27 @@
         "NSCameraUsageDescription": "Questa app richiede l'accesso alla fotocamera per scansionare documenti e caricare foto profilo.",
         "NSFaceIDUsageDescription": "Face ID viene utilizzato per l'accesso sicuro.",
         "NSPhotoLibraryUsageDescription": "La libreria foto è necessaria per caricare immagini dell'immobile.",
+        "NSPhotoLibraryAddUsageDescription": "L'app ha bisogno di salvare le foto che carichi nel tuo profilo.",
         "NSUserTrackingUsageDescription": "I dati vengono utilizzati per migliorare l'esperienza utente.",
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleLocalizations": [
-          "fr"
+          "en",
+          "it"
         ],
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiredDeviceCapabilities": [
+          "armv7"
+        ],
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       },
       "associatedDomains": [],
       "usesAppleSignIn": false,
@@ -123,7 +138,7 @@
       "fallbackToCacheTimeout": 0,
       "enabled": true,
       "requestHeaders": {},
-      "checkAutomatically": "ALWAYS",
+      "checkAutomatically": "ON_LOAD",
       "useEmbeddedUpdate": true,
       "assetPatternsToBeBundled": [],
       "disableAntiBrickingMeasures": false
