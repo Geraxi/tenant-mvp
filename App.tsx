@@ -2,23 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 // import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Temporarily disabled
-import { View, StyleSheet, Alert, AppState, ActivityIndicator, Text, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, StyleSheet, Alert, AppState, ActivityIndicator, Text, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 import { BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-reanimated';
 import './global.css';
+import { ClerkProvider, useAuth as useClerkAuth } from '@clerk/clerk-expo';
+import * as WebBrowser from 'expo-web-browser';
+import createTokenCache from './lib/tokenCache';
 import { useSupabaseAuth } from './src/hooks/useSupabaseAuth';
-import { Utente } from './src/types';
+import { Utente, Immobile } from './src/types';
 import { logger } from './src/utils/logger';
+
+// Complete the OAuth session in the browser
+// This must be called at the top level before any OAuth flows
+WebBrowser.maybeCompleteAuthSession();
 
 // Platform-specific Stripe imports - Metro automatically picks .web.tsx for web and .native.tsx for native
 import { StripeProvider } from './stripe-provider';
 
 // Import screens
 import LoginScreen from './screens/LoginScreen';
-import OnboardingFlowScreen from './screens/OnboardingFlowScreen';
+import SignInScreen from './screens/SignInScreen';
+// Old onboarding removed - using new flow
 import RoleSwitchOnboardingScreen from './screens/RoleSwitchOnboardingScreen';
 import PropertySwipeScreen from './screens/PropertySwipeScreen';
 
@@ -38,6 +47,12 @@ import FiltersScreen from './screens/FiltersScreen';
 import BottomNavigation from './components/BottomNavigation';
 import SplashScreen from './components/SplashScreen';
 import RoleSwitchLoadingScreen from './components/RoleSwitchLoadingScreen';
+import OnboardingFlowScreen from './screens/OnboardingFlowScreen';
+import LandlordOnboardingFlowScreen from './screens/LandlordOnboardingFlowScreen';
+import TenantOnboardingFlowScreen from './screens/TenantOnboardingFlowScreen';
+import GestioneImmobiliScreen from './screens/GestioneImmobiliScreen';
+import CreateListingScreen from './screens/CreateListingScreen';
+import PropertyDetailsScreen from './screens/PropertyDetailsScreen';
 
 type Screen = 
   | 'login'
@@ -52,13 +67,34 @@ type Screen =
   | 'editProfile'
   | 'help'
   | 'preferences'
-  | 'filters';
+  | 'filters'
+  | 'properties'
+  | 'addProperty'
+  | 'propertyDetails';
 
-type NavScreen = 'discover' | 'matches' | 'messages' | 'profilo';
+type NavScreen = 'discover' | 'properties' | 'matches' | 'messages' | 'profilo';
 
 
-export default function App() {
-  const { user, loading: authLoading, signIn, signUp, signOut, switchRole, completeOnboarding } = useSupabaseAuth();
+function AppContent() {
+  const {
+    user,
+    loading: authLoading,
+    signIn,
+    signUp,
+    signOut,
+    switchRole,
+    completeOnboarding,
+    reloadUserFromStorage,
+    updateProfile,
+  } = useSupabaseAuth();
+  // Also check Clerk auth state
+  const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded, userId: clerkUserId } = useClerkAuth();
+  
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/33576b38-9696-4a90-8e4e-ed8f02c7e75d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:72',message:'Clerk auth state',data:{isClerkSignedIn,isClerkLoaded,clerkUserId:clerkUserId||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [isClerkSignedIn, isClerkLoaded, clerkUserId]);
+  // #endregion
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
@@ -86,14 +122,29 @@ export default function App() {
   const [roleSwitchLoading, setRoleSwitchLoading] = useState(false);
   const [switchingToRole, setSwitchingToRole] = useState<'tenant' | 'landlord' | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<MatchWithDetails | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<Immobile | null>(null);
   const [messageTargetUserId, setMessageTargetUserId] = useState<string | null>(null);
   const [messageTargetUserName, setMessageTargetUserName] = useState<string | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   // NEW: Centralized role state management - derive from user directly
   const currentRole = user ? (
     user.userType === 'homeowner' || user.ruolo === 'homeowner' ? 'landlord' : 
     user.userType || user.ruolo
   ) : null;
+
+  // Add timeout to prevent infinite loading - MUST be before any early returns
+  useEffect(() => {
+    if (isLoading || authLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoading(false); // Force stop loading after 5 seconds
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading, authLoading]);
 
   // Debug user state changes in App
   useEffect(() => {
@@ -112,10 +163,17 @@ export default function App() {
 
   const initializeApp = async () => {
     try {
-      // Wait for auth to load
-      if (authLoading) {
-        return;
+      // Wait for auth to load, but with a timeout to prevent infinite loading
+      let authCheckCount = 0;
+      const maxAuthChecks = 30; // 3 seconds max wait
+      
+      while (authLoading && authCheckCount < maxAuthChecks) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        authCheckCount++;
       }
+
+      // Even if auth is still loading after timeout, proceed anyway
+      console.log('Auth loading check complete. authLoading:', authLoading, 'checks:', authCheckCount);
 
       // Check if user has completed onboarding from AsyncStorage
       const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
@@ -123,9 +181,13 @@ export default function App() {
       setHasCompletedOnboarding(hasCompleted);
 
       console.log('Initializing app with user:', !!user);
+      console.log('Initializing app with Clerk auth:', { isClerkSignedIn, isClerkLoaded, clerkUserId });
 
-      if (user) {
-        // User is logged in, check if they need onboarding
+      // Check both Supabase and Clerk auth
+      const hasUser = user || (isClerkLoaded && isClerkSignedIn);
+      
+      if (hasUser) {
+        // User is logged in (either via Supabase or Clerk), check if they need onboarding
         console.log('User found, checking onboarding status:', hasCompleted);
         if (!hasCompleted) {
           setCurrentScreen('onboarding');
@@ -141,17 +203,18 @@ export default function App() {
       console.error('Error initializing app:', error);
       setCurrentScreen('login');
     } finally {
+      // Always set loading to false, even if there was an error
       setIsLoading(false);
       setIsInitialized(true);
     }
   };
 
-  // Re-initialize when auth state changes
+  // Re-initialize when auth state changes (Supabase or Clerk)
   useEffect(() => {
     if (isInitialized) {
       initializeApp();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, isClerkLoaded, isClerkSignedIn, clerkUserId]);
 
   // Handle navigation to onboarding after signup when user becomes available
   const [pendingOnboardingNavigation, setPendingOnboardingNavigation] = useState(false);
@@ -203,7 +266,8 @@ export default function App() {
         if (hasCompleted) {
           setCurrentScreen('discover');
         } else {
-          setCurrentScreen('onboarding');
+          // Old onboarding removed - redirect to discover instead
+          setCurrentScreen('discover');
         }
       } else {
         Alert.alert('Errore', result.error || 'Email o password non corretti');
@@ -236,6 +300,9 @@ export default function App() {
       // Clear all local state
       setHasCompletedOnboarding(false);
       setCurrentScreen('login');
+      setForceNavbar(false);
+      setShowHomeownerOnboarding(false);
+      setRoleSwitchTarget(null);
       
       console.log('Logout completed successfully');
     } catch (error) {
@@ -327,6 +394,9 @@ export default function App() {
       case 'messages':
         setCurrentScreen('messages');
         break;
+      case 'properties':
+        setCurrentScreen('properties');
+        break;
       case 'profilo':
         setCurrentScreen('profilo');
         break;
@@ -341,6 +411,10 @@ export default function App() {
         return 'matches';
       case 'messages':
         return 'messages';
+      case 'properties':
+      case 'addProperty':
+      case 'propertyDetails':
+        return 'properties';
       case 'profilo':
       case 'settings':
       case 'editProfile':
@@ -350,10 +424,12 @@ export default function App() {
     }
   };
 
-  const showBottomNav = user && !['login', 'onboarding', 'homeownerOnboarding', 'settings', 'editProfile', 'help', 'preferences', 'filters'].includes(currentScreen);
+  const showBottomNav = !!user && !['login', 'onboarding', 'homeownerOnboarding', 'settings', 'editProfile', 'help', 'preferences', 'filters', 'addProperty', 'propertyDetails'].includes(currentScreen);
   
   // Show navbar for main navigation screens (but not during onboarding)
-  const shouldShowNavbar = showBottomNav || (forceNavbar && currentScreen !== 'onboarding' && currentScreen !== 'homeownerOnboarding');
+  const shouldShowNavbar =
+    showBottomNav ||
+    (forceNavbar && !!user && !['login', 'onboarding', 'homeownerOnboarding'].includes(currentScreen));
   console.log('App - Should show navbar:', shouldShowNavbar);
   
   // Simplified user state monitoring (no more complex refresh logic)
@@ -365,6 +441,12 @@ export default function App() {
       currentScreen
     });
   }, [user, currentRole, currentScreen]);
+
+  useEffect(() => {
+    if (!user) {
+      setForceNavbar(false);
+    }
+  }, [user]);
   
   // Force refresh when currentRole changes - DISABLED TO PREVENT INFINITE LOOP
   // useEffect(() => {
@@ -392,11 +474,27 @@ export default function App() {
       return <RoleSwitchLoadingScreen newRole={switchingToRole} onTimeout={handleRoleSwitchTimeout} />;
     }
 
-  if (isLoading || authLoading) {
+  if ((isLoading || authLoading) && !loadingTimeout) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
         <Text style={styles.loadingText}>Caricamento...</Text>
+      </View>
+    );
+  }
+
+  // If loading timed out, show login screen
+  if (loadingTimeout) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Timeout. Redirecting to login...</Text>
+        {(() => {
+          setTimeout(() => {
+            setCurrentScreen('login');
+            setLoadingTimeout(false);
+          }, 1000);
+          return null;
+        })()}
       </View>
     );
   }
@@ -413,28 +511,25 @@ export default function App() {
             onLoginSuccess={async () => {
               console.log('Login success - checking onboarding status');
               setForceNavbar(true);
-              // Check if user has completed onboarding
+              await reloadUserFromStorage();
               const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
               const hasCompleted = onboardingCompleted === 'true';
               
-              // Small delay to ensure user state is set
               setTimeout(() => {
                 if (hasCompleted) {
                   console.log('Onboarding completed, navigating to home');
                   setCurrentScreen('discover');
                 } else {
                   console.log('Onboarding not completed, navigating to onboarding');
-                  setCurrentScreen('onboarding');
+                  setCurrentScreen('discover');
                 }
               }, 100);
             }}
             onSignupSuccess={async () => {
               console.log('Signup success - will navigate to onboarding when user is available');
               setForceNavbar(true);
-              // Set flag to navigate to onboarding once user state is available
+              await reloadUserFromStorage();
               setPendingOnboardingNavigation(true);
-              // Also try to navigate immediately - if user is already available, this will work
-              // Otherwise, the useEffect above will handle it when user becomes available
               if (user) {
                 setPendingOnboardingNavigation(false);
                 setCurrentScreen('onboarding');
@@ -476,38 +571,61 @@ export default function App() {
             }}
           />
         ) : (
-          <OnboardingFlowScreen
-            user={user}
-            onComplete={async (onboardingData) => {
-              try {
-                // Update user role if it was selected during onboarding and differs from current role
-                if (onboardingData?.role && onboardingData.role !== 'roommate' && user) {
-                  const roleToSet = onboardingData.role === 'landlord' ? 'landlord' : 'tenant';
-                  const currentUserRole = user.userType === 'homeowner' || user.ruolo === 'homeowner' ? 'landlord' : (user.userType || user.ruolo);
-                  
-                  console.log('Onboarding completion - Selected role:', roleToSet);
-                  console.log('Onboarding completion - Current user role:', currentUserRole);
-                  
-                  // Only update if the role is different
-                  if (roleToSet !== currentUserRole) {
-                    console.log('Updating user role from onboarding:', roleToSet);
-                    await switchRole(roleToSet);
-                    // Wait a bit for the role to update
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                  }
-                }
-                
-                // Save onboarding completion to AsyncStorage
-                await AsyncStorage.setItem('onboarding_completed', 'true');
-                setHasCompletedOnboarding(true);
+          (user?.ruolo === 'landlord' || user?.userType === 'homeowner') ? (
+            <LandlordOnboardingFlowScreen
+              user={user}
+              onCancel={() => setCurrentScreen('login')}
+              onComplete={async (data) => {
+                const details = data?.personalDetails || {};
+                const fullName = [details.nome, details.cognome].filter(Boolean).join(' ').trim();
+                const addressParts = [details.indirizzo, details.cap, details.citta].filter(Boolean).join(', ');
+
+                await updateProfile({
+                  nome: fullName || user.nome,
+                  telefono: details.telefono || user.telefono,
+                  data_nascita: details.dataNascita || user.data_nascita,
+                  indirizzo: addressParts || user.indirizzo,
+                  bio: details.bio || user.bio,
+                  foto: details.foto || user.foto,
+                  ruolo: 'landlord',
+                  userType: 'homeowner',
+                });
+
+                await completeOnboarding('landlord');
                 setCurrentScreen('discover');
-              } catch (error) {
-                console.error('Error saving onboarding completion:', error);
-                setHasCompletedOnboarding(true);
+              }}
+            />
+          ) : (user?.ruolo === 'tenant' || user?.userType === 'tenant') ? (
+            <TenantOnboardingFlowScreen
+              user={user}
+              onCancel={() => setCurrentScreen('login')}
+              onComplete={async (data) => {
+                const details = data?.profile || {};
+                await updateProfile({
+                  nome: details.nome || user.nome,
+                  bio: details.bio || user.bio,
+                  foto: details.foto || user.foto,
+                  ruolo: 'tenant',
+                  userType: 'tenant',
+                });
+                await completeOnboarding('tenant');
                 setCurrentScreen('discover');
-              }
-            }}
-          />
+              }}
+            />
+          ) : (
+            <OnboardingFlowScreen
+              user={user}
+              onComplete={async (onboardingData) => {
+                const selectedRole = onboardingData?.role === 'landlord' ? 'landlord' : 'tenant';
+                await updateProfile({
+                  ruolo: selectedRole,
+                  userType: selectedRole === 'landlord' ? 'homeowner' : 'tenant',
+                });
+                await completeOnboarding(selectedRole);
+                setCurrentScreen('discover');
+              }}
+            />
+          )
         );
 
       case 'homeownerOnboarding':
@@ -716,23 +834,33 @@ export default function App() {
 
       case 'properties':
         return (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-            <MaterialIcons name="business" size={64} color="#2196F3" />
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#333', marginTop: 20 }}>
-              Gestione Proprietà
-            </Text>
-            <Text style={{ fontSize: 16, color: '#666', marginTop: 10, textAlign: 'center', paddingHorizontal: 20 }}>
-              Questa schermata sarà disponibile presto per gestire le tue proprietà.
-            </Text>
-            <TouchableOpacity 
-              style={{ backgroundColor: '#2196F3', padding: 15, borderRadius: 8, marginTop: 30 }}
-              onPress={() => setCurrentScreen('discover')}
-            >
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-                Torna alla Home
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <GestioneImmobiliScreen
+            onBack={() => setCurrentScreen('discover')}
+            onNavigateToAddProperty={() => setCurrentScreen('addProperty')}
+            onNavigateToPropertyDetails={(immobile) => {
+              setSelectedProperty(immobile);
+              setCurrentScreen('propertyDetails');
+            }}
+          />
+        );
+
+      case 'addProperty':
+        return (
+          <CreateListingScreen
+            onBack={() => setCurrentScreen('properties')}
+            onSave={() => {
+              Alert.alert('Annuncio salvato', 'Il tuo annuncio è stato salvato con successo.');
+              setCurrentScreen('properties');
+            }}
+          />
+        );
+
+      case 'propertyDetails':
+        return (
+          <PropertyDetailsScreen
+            immobile={selectedProperty}
+            onBack={() => setCurrentScreen('properties')}
+          />
         );
 
       case 'tenants':
@@ -783,6 +911,7 @@ export default function App() {
             onLoginSuccess={async () => {
               console.log('Login success - checking onboarding status');
               setForceNavbar(true);
+              await reloadUserFromStorage();
               // Check if user has completed onboarding
               const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
               const hasCompleted = onboardingCompleted === 'true';
@@ -798,13 +927,23 @@ export default function App() {
                 }
               }, 100);
             }}
+            onSignupSuccess={async () => {
+              console.log('Signup success - will navigate to onboarding when user is available');
+              setForceNavbar(true);
+              await reloadUserFromStorage();
+              setPendingOnboardingNavigation(true);
+              if (user) {
+                setPendingOnboardingNavigation(false);
+                setCurrentScreen('onboarding');
+              }
+            }}
             onNavigateToSignup={() => Alert.alert('Info', 'Registrazione sarà disponibile presto')}
           />
         );
     }
   };
 
-  const AppContent = () => (
+  return (
     <SafeAreaProvider key={`app-${appRefreshKey}`}>
         <View style={styles.container} key={`container-${appRefreshKey}`}>
           {showHomeownerOnboarding ? (
@@ -834,15 +973,54 @@ export default function App() {
         <StatusBar style="dark" />
       </SafeAreaProvider>
   );
+}
+
+export default function App() {
+  // Get Clerk publishable key from environment
+  const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/33576b38-9696-4a90-8e4e-ed8f02c7e75d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:906',message:'App component render',data:{hasPublishableKey:!!clerkPublishableKey,keyLength:clerkPublishableKey?.length||0,keyPrefix:clerkPublishableKey?.substring(0,10)||'missing',isEmpty:!clerkPublishableKey||clerkPublishableKey.trim()===''},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
+  // Block app if publishable key is missing or empty
+  if (!clerkPublishableKey || clerkPublishableKey.trim() === '') {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/33576b38-9696-4a90-8e4e-ed8f02c7e75d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:911',message:'Missing publishable key error',data:{hasPublishableKey:!!clerkPublishableKey},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    console.error('[App] EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is missing or empty!');
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialIcons name="error-outline" size={64} color="#EF4444" />
+        <Text style={styles.errorTitle}>Configuration Error</Text>
+        <Text style={styles.errorMessage}>
+          Clerk publishable key is not configured.{'\n\n'}
+          Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env file.
+        </Text>
+        <Text style={styles.errorInstructions}>
+          The key should start with "pk_test_" or "pk_live_"
+        </Text>
+      </View>
+    );
+  }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/33576b38-9696-4a90-8e4e-ed8f02c7e75d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:928',message:'Rendering ClerkProvider',data:{hasPublishableKey:!!clerkPublishableKey,keyPrefix:clerkPublishableKey?.substring(0,10)||'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
 
   return (
-    <StripeProvider
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
-      merchantIdentifier="merchant.com.mytenant.tenantapp"
-      urlScheme="tenant"
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      tokenCache={createTokenCache()}
     >
-      <AppContent />
-    </StripeProvider>
+      <StripeProvider
+        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
+        merchantIdentifier="merchant.com.mytenant.tenantapp"
+        urlScheme="tenant"
+      >
+        <AppContent />
+      </StripeProvider>
+    </ClerkProvider>
   );
 }
 
@@ -861,5 +1039,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 24,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 24,
+  },
+  errorInstructions: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import RangeSlider from '../components/RangeSlider';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface OnboardingFiltersScreen1Props {
   onNext: (filters: any) => void;
@@ -46,7 +47,7 @@ export default function OnboardingFiltersScreen1({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#1A1A1A" />
+          <MaterialIcons name="arrow-back" size={22} color={premiumTheme.colors.ink} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Filtri</Text>
@@ -66,14 +67,14 @@ export default function OnboardingFiltersScreen1({
             <Text style={styles.cardTitle}>Dove vuoi cercare?</Text>
             <View style={styles.searchBar}>
               <View style={styles.searchIconContainer}>
-                <MaterialIcons name="location-on" size={20} color="#2196F3" />
+                <MaterialIcons name="location-on" size={20} color={premiumTheme.colors.accent} />
               </View>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Città, quartiere, indirizzo"
                 value={location}
                 onChangeText={setLocation}
-                placeholderTextColor="#999"
+                placeholderTextColor={premiumTheme.colors.inkMuted}
               />
             </View>
           </View>
@@ -120,7 +121,7 @@ export default function OnboardingFiltersScreen1({
                   <MaterialIcons 
                     name="bed" 
                     size={22} 
-                    color={propertyType === 'single' ? '#FFFFFF' : '#2196F3'} 
+                    color={propertyType === 'single' ? '#FFFFFF' : premiumTheme.colors.accent} 
                   />
                 </View>
                 <Text style={[styles.propertyText, propertyType === 'single' && styles.propertyTextActive]}>
@@ -136,7 +137,7 @@ export default function OnboardingFiltersScreen1({
                   <MaterialIcons 
                     name="hotel" 
                     size={22} 
-                    color={propertyType === 'double' ? '#FFFFFF' : '#2196F3'} 
+                    color={propertyType === 'double' ? '#FFFFFF' : premiumTheme.colors.accent} 
                   />
                 </View>
                 <Text style={[styles.propertyText, propertyType === 'double' && styles.propertyTextActive]}>
@@ -152,7 +153,7 @@ export default function OnboardingFiltersScreen1({
                   <MaterialIcons 
                     name="apartment" 
                     size={22} 
-                    color={propertyType === 'apartment' ? '#FFFFFF' : '#2196F3'} 
+                    color={propertyType === 'apartment' ? '#FFFFFF' : premiumTheme.colors.accent} 
                   />
                 </View>
                 <Text style={[styles.propertyText, propertyType === 'apartment' && styles.propertyTextActive]}>
@@ -171,7 +172,7 @@ export default function OnboardingFiltersScreen1({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#2196F3', '#1976D2']}
+              colors={premiumTheme.gradients.cta}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.buttonGradient}
@@ -189,7 +190,7 @@ export default function OnboardingFiltersScreen1({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: premiumTheme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -197,9 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: premiumTheme.colors.background,
   },
   backButton: {
     padding: 8,
@@ -212,12 +211,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: premiumTheme.colors.ink,
+    fontFamily: premiumTheme.typography.display,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#999',
+    color: premiumTheme.colors.inkMuted,
     marginTop: 2,
+    fontFamily: premiumTheme.typography.body,
   },
   placeholder: {
     width: 40,
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: premiumTheme.colors.background,
   },
   cardsContainer: {
     flex: 1,
@@ -237,34 +238,33 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingTop: 16,
     paddingBottom: 20,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: premiumTheme.colors.background,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
+    ...premiumTheme.shadows.card,
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: premiumTheme.colors.ink,
     marginBottom: 10,
+    fontFamily: premiumTheme.typography.display,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surfaceMuted,
+    borderRadius: premiumTheme.radii.input,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: premiumTheme.colors.border,
   },
   searchIconContainer: {
     marginRight: 10,
@@ -272,8 +272,9 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1A1A1A',
+    color: premiumTheme.colors.ink,
     fontWeight: '500',
+    fontFamily: premiumTheme.typography.body,
   },
   priceDisplay: {
     flexDirection: 'row',
@@ -282,25 +283,27 @@ const styles = StyleSheet.create({
   },
   priceBox: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 10,
+    backgroundColor: premiumTheme.colors.surfaceMuted,
+    borderRadius: premiumTheme.radii.input,
     padding: 10,
     alignItems: 'center',
   },
   priceLabel: {
     fontSize: 10,
-    color: '#999',
+    color: premiumTheme.colors.inkMuted,
     marginBottom: 4,
     fontWeight: '500',
+    fontFamily: premiumTheme.typography.body,
   },
   priceValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2196F3',
+    color: premiumTheme.colors.accent,
+    fontFamily: premiumTheme.typography.display,
   },
   priceDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: premiumTheme.colors.border,
     marginVertical: 8,
   },
   sliderContainer: {
@@ -312,49 +315,46 @@ const styles = StyleSheet.create({
   },
   propertyCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   propertyCardActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
+    backgroundColor: premiumTheme.colors.accentSoft,
+    borderColor: premiumTheme.colors.accent,
   },
   propertyIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: premiumTheme.colors.sky,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   propertyIconContainerActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: premiumTheme.colors.accent,
   },
   propertyText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.body,
   },
   propertyTextActive: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '700',
   },
   continueButton: {
-    borderRadius: 14,
+    borderRadius: premiumTheme.radii.button,
     overflow: 'hidden',
     marginTop: 4,
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...premiumTheme.shadows.lift,
   },
   buttonGradient: {
     paddingVertical: 16,
@@ -367,5 +367,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
+    fontFamily: premiumTheme.typography.body,
   },
 });

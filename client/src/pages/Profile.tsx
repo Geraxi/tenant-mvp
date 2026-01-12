@@ -46,7 +46,19 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   const handleLogout = async () => {
     queryClient.clear();
     await logout();
-    window.location.href = "/";
+    // Clear all onboarding state from localStorage (all user-scoped keys)
+    if (typeof window !== 'undefined') {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('tenantapp:')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+    // Redirect to auth page with login mode
+    window.location.href = "/auth?mode=login";
   };
 
   const [switchingRole, setSwitchingRole] = useState(false);
@@ -71,7 +83,12 @@ export default function Profile({ role }: { role: "tenant" | "landlord" }) {
   };
 
   const createOtherProfile = () => {
-    setLocation(`/onboarding?createRole=${otherRole}`);
+    // Redirect to appropriate welcome page
+    if (otherRole === "tenant") {
+      setLocation("/tenant/welcome");
+    } else {
+      setLocation("/landlord/welcome");
+    }
   };
 
   return (

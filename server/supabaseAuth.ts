@@ -125,7 +125,7 @@ export async function setupAuth(app: Express) {
               name: supabaseUser.user_metadata?.first_name && supabaseUser.user_metadata?.last_name
                 ? `${supabaseUser.user_metadata.first_name} ${supabaseUser.user_metadata.last_name}`
                 : supabaseUser.email?.split('@')[0] || null,
-              profilePhoto: supabaseUser.user_metadata?.avatar_url || null,
+              profileImageUrl: supabaseUser.user_metadata?.avatar_url || null,
               role: null, // Will need to be set in onboarding
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -172,7 +172,7 @@ export async function setupAuth(app: Express) {
                 name: supabaseUser.user_metadata?.first_name && supabaseUser.user_metadata?.last_name
                   ? `${supabaseUser.user_metadata.first_name} ${supabaseUser.user_metadata.last_name}`
                   : supabaseUser.email?.split('@')[0] || null,
-                profilePhoto: supabaseUser.user_metadata?.avatar_url || null,
+                profileImageUrl: supabaseUser.user_metadata?.avatar_url || null,
                 role: null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),

@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { Lock, ArrowLeft } from "lucide-react";
 
 export default function ResetPassword() {
   const { language } = useLanguage();
   const [, setLocation] = useLocation();
+  const { isSignedIn } = useClerkAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,14 +17,13 @@ export default function ResetPassword() {
 
   useEffect(() => {
     // Check if we have a valid session (from the reset link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setError(language === "it" 
-          ? "Link di reset non valido o scaduto. Richiedi un nuovo reset password." 
-          : "Invalid or expired reset link. Please request a new password reset.");
-      }
-    });
-  }, [language]);
+    // Clerk handles password reset via email link, so if user is here, they should be signed in
+    if (!isSignedIn) {
+      setError(language === "it" 
+        ? "Link di reset non valido o scaduto. Richiedi un nuovo reset password." 
+        : "Invalid or expired reset link. Please request a new password reset.");
+    }
+  }, [language, isSignedIn]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,29 +36,29 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
-      setError(language === "it" ? "La password deve essere di almeno 6 caratteri" : "Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError(language === "it" ? "La password deve essere di almeno 8 caratteri" : "Password must be at least 8 characters");
       setLoading(false);
       return;
     }
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (updateError) {
-        setError(updateError.message || (language === "it" ? "Errore durante l'aggiornamento della password" : "Error updating password"));
+      const clerk = (window as any).Clerk;
+      if (!clerk || !clerk.user) {
+        setError(language === "it" ? "Sessione non valida" : "Invalid session");
         setLoading(false);
         return;
       }
+
+      // Update password using Clerk
+      await clerk.user.updatePassword({ password });
 
       setSuccess(true);
       setTimeout(() => {
         setLocation("/");
       }, 2000);
     } catch (err: any) {
-      setError(err.message || (language === "it" ? "Errore durante il reset della password" : "Error resetting password"));
+      setError(err.errors?.[0]?.message || err.message || (language === "it" ? "Errore durante il reset della password" : "Error resetting password"));
     }
     setLoading(false);
   };

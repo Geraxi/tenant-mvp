@@ -17,7 +17,7 @@ import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
 import { Immobile, Contratto, FiltroImmobili } from '../src/types';
 
 interface GestioneImmobiliScreenProps {
-  onNavigateToPropertyDetails: (propertyId: string) => void;
+  onNavigateToPropertyDetails: (immobile: Immobile) => void;
   onNavigateToAddProperty: () => void;
   onBack: () => void;
 }
@@ -34,12 +34,13 @@ export default function GestioneImmobiliScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [filtro, setFiltro] = useState<FiltroImmobili>('tutti');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const isLandlord = user?.ruolo === 'landlord' || user?.userType === 'homeowner';
 
   useEffect(() => {
-    if (user?.id && user?.ruolo === 'landlord') {
+    if (user?.id && isLandlord) {
       loadData();
     }
-  }, [user?.id, filtro]);
+  }, [user?.id, filtro, isLandlord]);
 
   const loadData = async () => {
     try {
@@ -229,12 +230,14 @@ export default function GestioneImmobiliScreen({
     }
   };
 
-  const getStatusColor = (disponibile: boolean) => {
-    return disponibile ? '#4CAF50' : '#F44336';
-  };
-
-  const getStatusText = (disponibile: boolean) => {
-    return disponibile ? 'Disponibile' : 'Affittato';
+  const getListingStatus = (immobile: Immobile) => {
+    const contractStatus = getContractStatus(immobile.id);
+    if (contractStatus?.status === 'attivo') {
+      return { text: 'Affittato', color: '#9E9E9E' };
+    }
+    return immobile.disponibile
+      ? { text: 'Pubblicato', color: '#4CAF50' }
+      : { text: 'In revisione', color: '#FF9800' };
   };
 
   const getContractStatus = (propertyId: string) => {
@@ -273,7 +276,7 @@ export default function GestioneImmobiliScreen({
     { value: 'miei_immobili', label: 'I Miei Immobili' },
   ];
 
-  if (user?.ruolo !== 'landlord') {
+  if (!isLandlord) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -319,13 +322,13 @@ export default function GestioneImmobiliScreen({
           <Text style={[styles.statValue, { color: '#4CAF50' }]}>
             {immobili.filter(i => i.disponibile).length}
           </Text>
-          <Text style={styles.statLabel}>Disponibili</Text>
+          <Text style={styles.statLabel}>Pubblicati</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: '#F44336' }]}>
+          <Text style={[styles.statValue, { color: '#FF9800' }]}>
             {immobili.filter(i => !i.disponibile).length}
           </Text>
-          <Text style={styles.statLabel}>Affittati</Text>
+          <Text style={styles.statLabel}>In revisione</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={[styles.statValue, { color: '#2196F3' }]}>
@@ -373,7 +376,7 @@ export default function GestioneImmobiliScreen({
               <TouchableOpacity
                 key={immobile.id}
                 style={styles.propertyCard}
-                onPress={() => onNavigateToPropertyDetails(immobile.id)}
+                onPress={() => onNavigateToPropertyDetails(immobile)}
               >
                 <View style={styles.propertyImageContainer}>
                   <Image
@@ -392,10 +395,10 @@ export default function GestioneImmobiliScreen({
                   </View>
                   <View style={[
                     styles.statusBadge,
-                    { backgroundColor: getStatusColor(immobile.disponibile) }
+                    { backgroundColor: getListingStatus(immobile).color }
                   ]}>
                     <Text style={styles.statusText}>
-                      {getStatusText(immobile.disponibile)}
+                      {getListingStatus(immobile).text}
                     </Text>
                   </View>
                 </View>
@@ -461,6 +464,7 @@ export default function GestioneImmobiliScreen({
                       <Text style={styles.deletePropertyButtonText}>Elimina</Text>
                     </TouchableOpacity>
                   </View>
+
                 </View>
               </TouchableOpacity>
             );

@@ -531,6 +531,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: 40,
     paddingBottom: 120, // Add bottom padding to prevent overlap
+    position: 'relative',
   },
   actionsContainer: {
     position: 'absolute',

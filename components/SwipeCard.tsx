@@ -529,6 +529,8 @@ const styles = StyleSheet.create({
     zIndex: 1, // Lower than buttons
   },
   nextCard: {
+    position: 'absolute',
+    top: 0,
     transform: [{ scale: 0.95 }, { translateY: 10 }],
     opacity: 1,
     zIndex: -1,

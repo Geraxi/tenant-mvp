@@ -48,34 +48,29 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
-      // Suppress database connection errors from being displayed
-      onError: (error: any) => {
-        // Don't show technical database errors to users
+      retry: (failureCount, error: any) => {
+        // Don't retry on database connection errors
         const errorMessage = error?.message || error?.toString() || '';
         if (errorMessage.includes('getaddrinfo') || 
             errorMessage.includes('ENOTFOUND') || 
             errorMessage.includes('aws-0.us-east-1.pooler.supabase.com') ||
             errorMessage.includes('Failed to fetch user')) {
-          // Silently ignore database connection errors
-          return;
+          return false;
         }
-        console.error("Query error:", error);
+        return false; // Don't retry by default
       },
     },
     mutations: {
-      retry: false,
-      onError: (error: any) => {
-        // Don't show technical database errors to users
+      retry: (failureCount, error: any) => {
+        // Don't retry on database connection errors
         const errorMessage = error?.message || error?.toString() || '';
         if (errorMessage.includes('getaddrinfo') || 
             errorMessage.includes('ENOTFOUND') || 
             errorMessage.includes('aws-0.us-east-1.pooler.supabase.com') ||
             errorMessage.includes('Failed to fetch user')) {
-          // Silently ignore database connection errors
-          return;
+          return false;
         }
-        console.error("Mutation error:", error);
+        return false; // Don't retry by default
       },
     },
   },

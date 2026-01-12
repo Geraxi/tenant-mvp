@@ -12,8 +12,10 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Utente } from '../src/types';
 import { VerificationService } from '../src/services/verificationService';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface IDVerificationScreenProps {
   user: Utente;
@@ -178,14 +180,14 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
             <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <MaterialIcons name="cloud-upload" size={40} color="#999" />
+              <MaterialIcons name="cloud-upload" size={40} color={premiumTheme.colors.inkMuted} />
               <Text style={styles.placeholderText}>Carica immagine</Text>
             </View>
           )}
           
           {isUploading && (
             <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color="#2196F3" />
+              <ActivityIndicator size="large" color={premiumTheme.colors.accent} />
             </View>
           )}
         </View>
@@ -196,7 +198,7 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
             onPress={() => handleImagePicker(type)}
             disabled={isUploading}
           >
-            <MaterialIcons name="photo-library" size={20} color="#2196F3" />
+            <MaterialIcons name="photo-library" size={20} color={premiumTheme.colors.accent} />
             <Text style={styles.uploadActionText}>Galleria</Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -204,7 +206,7 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
             onPress={() => handleCamera(type)}
             disabled={isUploading}
           >
-            <MaterialIcons name="camera-alt" size={20} color="#2196F3" />
+            <MaterialIcons name="camera-alt" size={20} color={premiumTheme.colors.accent} />
             <Text style={styles.uploadActionText}>Fotocamera</Text>
           </TouchableOpacity>
         </View>
@@ -229,7 +231,7 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
               <MaterialIcons 
                 name={type.icon as any} 
                 size={32} 
-                color={idVerification.documentType === type.id ? '#2196F3' : '#666'} 
+                color={idVerification.documentType === type.id ? premiumTheme.colors.accent : premiumTheme.colors.inkMuted} 
               />
               <Text style={[
                 styles.documentTypeText,
@@ -272,7 +274,7 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
         </View>
 
         <View style={styles.infoBox}>
-          <MaterialIcons name="info" size={20} color="#2196F3" />
+          <MaterialIcons name="info" size={20} color={premiumTheme.colors.accent} />
           <Text style={styles.infoText}>
             Le tue informazioni sono protette e utilizzate solo per la verifica dell'identità. 
             Non condivideremo mai i tuoi documenti con terze parti.
@@ -280,18 +282,20 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
         </View>
 
         <TouchableOpacity style={styles.documentButton} onPress={handleDocumentPicker}>
-          <MaterialIcons name="description" size={20} color="#2196F3" />
+          <MaterialIcons name="description" size={20} color={premiumTheme.colors.accent} />
           <Text style={styles.documentButtonText}>Carica Documento PDF (Opzionale)</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={20} color="#666" />
+          <MaterialIcons name="arrow-back" size={20} color={premiumTheme.colors.inkMuted} />
           <Text style={styles.backButtonText}>Indietro</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
-          <Text style={styles.continueButtonText}>Continua</Text>
+          <LinearGradient colors={premiumTheme.gradients.cta} style={styles.continueButtonGradient}>
+            <Text style={styles.continueButtonText}>Continua</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -301,17 +305,18 @@ export default function IDVerificationScreen({ user, onComplete, onBack }: IDVer
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: premiumTheme.colors.background,
   },
   content: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
     marginBottom: 15,
     marginTop: 20,
+    fontFamily: premiumTheme.typography.display,
   },
   documentTypes: {
     flexDirection: 'row',
@@ -319,25 +324,26 @@ const styles = StyleSheet.create({
   },
   documentTypeCard: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 20,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   documentTypeCardSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: premiumTheme.colors.accent,
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   documentTypeText: {
     fontSize: 12,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     marginTop: 8,
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.body,
   },
   documentTypeTextSelected: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '600',
   },
   uploadContainer: {
@@ -346,8 +352,9 @@ const styles = StyleSheet.create({
   uploadLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: premiumTheme.colors.ink,
     marginBottom: 10,
+    fontFamily: premiumTheme.typography.display,
   },
   imageContainer: {
     position: 'relative',
@@ -356,24 +363,25 @@ const styles = StyleSheet.create({
   uploadedImage: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.card,
     resizeMode: 'cover',
   },
   imagePlaceholder: {
     width: '100%',
     height: 200,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surfaceMuted,
+    borderRadius: premiumTheme.radii.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
     borderStyle: 'dashed',
   },
   placeholderText: {
     fontSize: 14,
-    color: '#999',
+    color: premiumTheme.colors.inkMuted,
     marginTop: 8,
+    fontFamily: premiumTheme.typography.body,
   },
   uploadingOverlay: {
     position: 'absolute',
@@ -382,7 +390,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -396,16 +404,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: premiumTheme.colors.accent,
     gap: 8,
   },
   uploadActionText: {
     fontSize: 14,
-    color: '#2196F3',
+    color: premiumTheme.colors.accent,
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
   inputGroup: {
     marginBottom: 20,
@@ -413,25 +422,27 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: premiumTheme.colors.ink,
     marginBottom: 8,
+    fontFamily: premiumTheme.typography.body,
   },
   textInput: {
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   inputText: {
     fontSize: 16,
-    color: '#999',
+    color: premiumTheme.colors.inkMuted,
+    fontFamily: premiumTheme.typography.body,
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#E3F2FD',
-    borderRadius: 8,
+    backgroundColor: premiumTheme.colors.sky,
+    borderRadius: premiumTheme.radii.input,
     padding: 15,
     marginBottom: 20,
     gap: 10,
@@ -439,24 +450,26 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#1976D2',
+    color: premiumTheme.colors.navy,
     lineHeight: 20,
+    fontFamily: premiumTheme.typography.body,
   },
   documentButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
     gap: 10,
   },
   documentButtonText: {
     fontSize: 16,
-    color: '#2196F3',
+    color: premiumTheme.colors.accent,
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
   footer: {
     flexDirection: 'row',
@@ -469,25 +482,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    borderRadius: 8,
+    borderRadius: premiumTheme.radii.button,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
     gap: 8,
+    backgroundColor: premiumTheme.colors.surface,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
+    fontFamily: premiumTheme.typography.body,
   },
   continueButton: {
     flex: 2,
+    borderRadius: premiumTheme.radii.button,
+    overflow: 'hidden',
+    ...premiumTheme.shadows.lift,
+  },
+  continueButtonGradient: {
     paddingVertical: 15,
-    backgroundColor: '#2196F3',
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
   },
   continueButtonText: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
 });

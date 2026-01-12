@@ -82,3 +82,6 @@ Check the server logs for any connection errors. If you see connection errors, d
 3. **Password Issues**: Ensure the password doesn't have special characters that need URL encoding
 4. **IP Restrictions**: If you have IP restrictions enabled, make sure your server's IP is whitelisted
 
+
+
+

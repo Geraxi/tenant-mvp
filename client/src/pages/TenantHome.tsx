@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { BottomNav, TopBar } from "@/components/Layout";
@@ -10,19 +10,53 @@ import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import Paywall from "@/pages/Paywall";
+
+type SwipeItem = {
+  id: string;
+  type: "property" | "roommate";
+  data: any;
+};
 
 export default function TenantHome() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<"properties" | "roommates">("properties");
   const [lastDirection, setLastDirection] = useState<string | null>(null);
   const [propertyFilters, setPropertyFilters] = useState<FilterOptions | null>(null);
   const [roommateFilters, setRoommateFilters] = useState<FilterOptions | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  const currentFilters = mode === "properties" ? propertyFilters : roommateFilters;
+  // Check what user is looking for
+  const userLookingFor = useMemo(() => {
+    return (user as any)?.lookingFor || [];
+  }, [user]);
+  
+  const lookingForBoth = useMemo(() => {
+    return userLookingFor.includes("homes") && userLookingFor.includes("roommates");
+  }, [userLookingFor]);
+  
+  const lookingForRoommates = useMemo(() => {
+    return userLookingFor.includes("roommates");
+  }, [userLookingFor]);
+  
+  const lookingForHomes = useMemo(() => {
+    return userLookingFor.includes("homes");
+  }, [userLookingFor]);
+  
+  // Set initial mode based on what user is looking for
+  useEffect(() => {
+    if (lookingForRoommates && !lookingForHomes) {
+      setMode("roommates");
+    } else if (lookingForHomes && !lookingForRoommates) {
+      setMode("properties");
+    }
+  }, [lookingForRoommates, lookingForHomes]);
+
 
   const handleApplyFilters = (newFilters: FilterOptions) => {
     if (mode === "properties") {
@@ -36,25 +70,28 @@ export default function TenantHome() {
     });
   };
 
-  const { data: properties = [], isLoading: propertiesLoading, refetch: refetchProperties } = useQuery({
+  const { data: properties = [], isLoading: propertiesLoading, refetch: refetchProperties, error: propertiesError } = useQuery({
     queryKey: ["properties"],
     queryFn: api.getProperties,
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { data: roommates = [], isLoading: roommatesLoading, refetch: refetchRoommates } = useQuery({
+  const { data: roommates = [], isLoading: roommatesLoading, refetch: refetchRoommates, error: roommatesError } = useQuery({
     queryKey: ["roommates"],
     queryFn: api.getRoommates,
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const swipeMutation = useMutation({
     mutationFn: ({ targetType, targetId, action }: { targetType: 'property' | 'roommate', targetId: string, action: 'like' | 'skip' }) =>
       api.swipe(targetType, targetId, action),
     onSuccess: () => {
-      if (mode === "properties") {
-        refetchProperties();
-      } else {
-        refetchRoommates();
-      }
+      refetchProperties();
+      refetchRoommates();
     },
     onError: (error: any) => {
       if (error?.code === "SWIPE_LIMIT_REACHED") {
@@ -69,30 +106,77 @@ export default function TenantHome() {
     },
   });
 
+  // Combine properties and roommates if looking for both
+  const combinedItems: SwipeItem[] = useMemo(() => {
+    if (lookingForBoth) {
+      // User wants both - combine them
+      const props = properties.map(p => ({ id: p.id, type: "property" as const, data: p }));
+      const roomies = roommates.map(r => ({ id: r.id, type: "roommate" as const, data: r }));
+      // Interleave them for variety
+      const combined: SwipeItem[] = [];
+      const maxLen = Math.max(props.length, roomies.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < props.length) combined.push(props[i]);
+        if (i < roomies.length) combined.push(roomies[i]);
+      }
+      return combined;
+    } else if (lookingForRoommates && !lookingForHomes) {
+      // User only wants roommates
+      return roommates.map(r => ({ id: r.id, type: "roommate" as const, data: r }));
+    } else if (lookingForHomes && !lookingForRoommates) {
+      // User only wants properties
+      return properties.map(p => ({ id: p.id, type: "property" as const, data: p }));
+    } else {
+      // Fallback to mode-based (for users who haven't set lookingFor yet)
+      if (mode === "properties") {
+        return properties.map(p => ({ id: p.id, type: "property" as const, data: p }));
+      } else {
+        return roommates.map(r => ({ id: r.id, type: "roommate" as const, data: r }));
+      }
+    }
+  }, [properties, roommates, lookingForBoth, lookingForRoommates, lookingForHomes, mode]);
+
   const handleSwipe = (direction: "left" | "right") => {
     setLastDirection(direction);
     if (filteredItems.length > 0) {
       const item = filteredItems[0];
       swipeMutation.mutate({
-        targetType: mode === "properties" ? "property" : "roommate",
+        targetType: item.type,
         targetId: item.id,
         action: direction === "right" ? "like" : "skip",
       });
     }
   };
 
-  const isLoading = mode === "properties" ? propertiesLoading : roommatesLoading;
-  const currentItems = mode === "properties" ? properties : roommates;
+  const isLoading = lookingForBoth 
+    ? (propertiesLoading || roommatesLoading)
+    : (mode === "properties" ? propertiesLoading : roommatesLoading);
 
-  const filteredItems = currentItems.filter(item => {
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000); // 10 second timeout
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading]);
+
+  const currentFilters = lookingForBoth 
+    ? (propertyFilters || roommateFilters) // Use whichever filter is set
+    : (mode === "properties" ? propertyFilters : roommateFilters);
+
+  const filteredItems = combinedItems.filter(item => {
     if (!currentFilters) return true;
-    if (mode === "properties") {
-      const prop = item as any;
+    if (item.type === "property") {
+      const prop = item.data as any;
       if (currentFilters.priceRange && (prop.price < currentFilters.priceRange[0] || prop.price > currentFilters.priceRange[1])) return false;
       if (currentFilters.beds !== null && prop.beds < currentFilters.beds) return false;
       if (currentFilters.baths !== null && prop.baths < currentFilters.baths) return false;
     } else {
-      const roommate = item as any;
+      const roommate = item.data as any;
       if (currentFilters.ageRange && roommate.age && (roommate.age < currentFilters.ageRange[0] || roommate.age > currentFilters.ageRange[1])) return false;
       if (currentFilters.gender && roommate.gender && roommate.gender !== currentFilters.gender) return false;
     }
@@ -117,50 +201,89 @@ export default function TenantHome() {
         </div>
         <div className="w-10 flex justify-end">
           <FilterSheet 
-            type={mode === "properties" ? "property" : "roommate"} 
-            onApply={handleApplyFilters}
+            type={lookingForBoth ? "both" : (mode === "properties" ? "property" : "roommate")} 
+            onApply={(filters) => {
+              if (lookingForBoth) {
+                setPropertyFilters(filters);
+                setRoommateFilters(filters);
+              } else if (mode === "properties") {
+                setPropertyFilters(filters);
+              } else {
+                setRoommateFilters(filters);
+              }
+              toast({
+                title: "Filters Applied",
+                description: "Your search preferences have been updated",
+              });
+            }}
             currentFilters={currentFilters}
           />
         </div>
       </header>
       
-      {/* Mode Toggle */}
-      <div className="fixed top-16 left-0 right-0 z-30 px-6 flex justify-center">
-        <div className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex gap-1">
-          <button
-            onClick={() => setMode("properties")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
-              mode === "properties" 
-                ? "bg-primary text-white shadow-md" 
-                : "text-gray-500 hover:bg-gray-50"
-            )}
-            data-testid="button-toggle-properties"
-          >
-            <Home size={16} />
-            {t("tenant.toggle.homes")}
-          </button>
-          <button
-            onClick={() => setMode("roommates")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
-              mode === "roommates" 
-                ? "bg-secondary text-white shadow-md" 
-                : "text-gray-500 hover:bg-gray-50"
-            )}
-            data-testid="button-toggle-roommates"
-          >
-            <Users size={16} />
-            {t("tenant.toggle.roommates")}
-          </button>
+      {/* Mode Toggle - Show only if user hasn't set preferences yet */}
+      {userLookingFor.length === 0 && (
+        <div className="fixed top-16 left-0 right-0 z-30 px-6 flex justify-center">
+          <div className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex gap-1">
+            <button
+              onClick={() => setMode("properties")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                mode === "properties" 
+                  ? "bg-primary text-white shadow-md" 
+                  : "text-gray-500 hover:bg-gray-50"
+              )}
+              data-testid="button-toggle-properties"
+            >
+              <Home size={16} />
+              {t("tenant.toggle.homes")}
+            </button>
+            <button
+              onClick={() => setMode("roommates")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                mode === "roommates" 
+                  ? "bg-secondary text-white shadow-md" 
+                  : "text-gray-500 hover:bg-gray-50"
+              )}
+              data-testid="button-toggle-roommates"
+            >
+              <Users size={16} />
+              {t("tenant.toggle.roommates")}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <main className="h-[calc(100vh-140px)] w-full max-w-md mx-auto pt-24 px-4 flex flex-col items-center justify-center relative">
-        {isLoading ? (
+      <main className={`h-[calc(100vh-140px)] w-full max-w-md mx-auto ${lookingForBoth ? 'pt-16' : 'pt-24'} px-4 flex flex-col items-center justify-center relative`}>
+        {isLoading && !loadingTimeout ? (
           <div className="text-center p-8">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-gray-500">Loading...</p>
+          </div>
+        ) : loadingTimeout ? (
+          <div className="text-center p-8">
+            <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <Home className="text-gray-400" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {t("empty.noProperties")}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {propertiesError || roommatesError 
+                ? (propertiesError?.message || roommatesError?.message || "Failed to load content")
+                : "No content available"}
+            </p>
+            <button
+              onClick={() => {
+                setLoadingTimeout(false);
+                refetchProperties();
+                refetchRoommates();
+              }}
+              className="bg-blue-600 text-white font-bold py-2 px-6 rounded-xl"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <AnimatePresence mode="wait">
@@ -168,9 +291,9 @@ export default function TenantHome() {
               <div className="relative w-full h-[60vh]">
                 {filteredItems.slice(0, 2).reverse().map((item, index) => (
                    <SwipeCard 
-                     key={item.id} 
-                     data={item} 
-                     type={mode === "properties" ? "property" : "tenant"} 
+                     key={`${item.type}-${item.id}`} 
+                     data={item.data} 
+                     type={item.type === "property" ? "property" : "tenant"} 
                      onSwipe={handleSwipe} 
                    />
                 ))}
@@ -184,14 +307,18 @@ export default function TenantHome() {
                 key="empty-state"
               >
                 <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  {mode === "properties" ? (
+                  {lookingForBoth ? (
+                    <Heart className="text-gray-400" size={32} />
+                  ) : mode === "properties" ? (
                     <Heart className="text-gray-400" size={32} />
                   ) : (
                     <Users className="text-gray-400" size={32} />
                   )}
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {mode === "properties" ? t("empty.noProperties") : t("empty.noRoommates")}
+                  {lookingForBoth 
+                    ? t("empty.noMatches")
+                    : (mode === "properties" ? t("empty.noProperties") : t("empty.noRoommates"))}
                 </h3>
                 <p className="text-gray-500">{t("empty.checkLater")}</p>
               </motion.div>
@@ -213,7 +340,9 @@ export default function TenantHome() {
               onClick={() => handleSwipe("right")}
               className={cn(
                 "w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform",
-                mode === "properties" ? "bg-primary shadow-primary/30" : "bg-secondary shadow-secondary/30"
+                lookingForBoth || mode === "properties" 
+                  ? "bg-primary shadow-primary/30" 
+                  : "bg-secondary shadow-secondary/30"
               )}
               data-testid="button-swipe-right"
             >

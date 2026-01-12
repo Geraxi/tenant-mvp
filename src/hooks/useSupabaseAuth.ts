@@ -616,6 +616,7 @@ export const useSupabaseAuth = () => {
 
       // Store in AsyncStorage
       await AsyncStorage.setItem(onboardingKey, 'true');
+      await AsyncStorage.setItem('onboarding_completed', 'true');
       await AsyncStorage.setItem('current_user', JSON.stringify(updatedUser));
       logger.debug('✅ Onboarding completed and user saved to storage');
 
@@ -834,6 +835,10 @@ export const useSupabaseAuth = () => {
     }
   };
 
+  const reloadUserFromStorage = async () => {
+    return await loadCurrentUserFromStorage();
+  };
+
   const addTestUsers = async () => {
     try {
       // Check if test users already exist
@@ -922,5 +927,6 @@ export const useSupabaseAuth = () => {
     getStoredRolePreference,
     checkExistingUsers,
     signInWithApple,
+    reloadUserFromStorage,
   };
 };

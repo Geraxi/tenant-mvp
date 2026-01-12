@@ -1,9 +1,40 @@
-import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
 import { api } from './api';
 
+// For web builds, Capacitor won't be available - handle gracefully
+// Only use Capacitor if it's actually available (native builds)
+let Capacitor: any = null;
+let PushNotifications: any = null;
+
+// Initialize Capacitor modules only if available (native builds)
+const initCapacitorIfAvailable = () => {
+  if (typeof window === 'undefined') return false;
+  
+  const windowAny = window as any;
+  
+  // Check if Capacitor is loaded via script tag or globals (native builds)
+  if (windowAny.Capacitor) {
+    Capacitor = windowAny.Capacitor;
+    try {
+      PushNotifications = windowAny.PushNotifications || 
+        (windowAny.Capacitor?.Plugins?.PushNotifications);
+    } catch (e) {
+      console.log('[capacitorPush] PushNotifications not available');
+    }
+    return true;
+  }
+  
+  return false;
+};
+
 export async function initializeCapacitorPush(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
+  // For web builds, Capacitor won't be available - return false gracefully
+  if (!initCapacitorIfAvailable() || !Capacitor?.isNativePlatform()) {
+    console.log('[capacitorPush] Capacitor not available - skipping push notifications (web build)');
+    return false;
+  }
+
+  if (!PushNotifications) {
+    console.warn('[capacitorPush] PushNotifications plugin not available');
     return false;
   }
 
@@ -18,11 +49,15 @@ export async function initializeCapacitorPush(): Promise<boolean> {
 
     PushNotifications.addListener('registration', async (token) => {
       console.log('Push registration token:', token.value);
-      await api.subscribeToPush({
-        endpoint: `capacitor://${Capacitor.getPlatform()}/${token.value}`,
-        p256dh: token.value,
-        auth: token.value,
-      });
+      try {
+        await api.subscribeToPush({
+          endpoint: `capacitor://${Capacitor.getPlatform()}/${token.value}`,
+          p256dh: token.value,
+          auth: token.value,
+        });
+      } catch (err) {
+        console.error('Failed to subscribe to push:', err);
+      }
     });
 
     PushNotifications.addListener('registrationError', (error) => {
@@ -49,5 +84,8 @@ export async function initializeCapacitorPush(): Promise<boolean> {
 }
 
 export function isCapacitorPlatform(): boolean {
-  return Capacitor.isNativePlatform();
+  // Check if Capacitor is available without trying to import it
+  if (typeof window === 'undefined') return false;
+  const windowAny = window as any;
+  return windowAny.Capacitor?.isNativePlatform() || false;
 }

@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Property } from '../types';
 import { t } from '../utils/translations';
 import ListingAnalyzerWebView from '../components/ListingAnalyzerWebView';
 import ListingAnalyzer, { PropertyData } from '../utils/listingAnalyzer';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface CreateListingScreenProps {
   onBack: () => void;
@@ -305,7 +307,7 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
               </View>
             ))}
             <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddPhoto}>
-              <MaterialIcons name="add-a-photo" size={32} color="#2196F3" />
+              <MaterialIcons name="add-a-photo" size={32} color={premiumTheme.colors.accent} />
               <Text style={styles.addPhotoText}>{t('addPhoto')}</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -481,52 +483,52 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
 
           <View style={styles.switchContainer}>
             <View style={styles.switchRow}>
-              <MaterialIcons name="weekend" size={24} color="#2196F3" />
+              <MaterialIcons name="weekend" size={24} color={premiumTheme.colors.accent} />
               <Text style={styles.switchLabel}>Arredato</Text>
             </View>
             <Switch
               value={furnished}
               onValueChange={setFurnished}
-              trackColor={{ false: '#E0E0E0', true: '#2196F3' }}
+              trackColor={{ false: premiumTheme.colors.border, true: premiumTheme.colors.accent }}
               thumbColor="#fff"
             />
           </View>
 
           <View style={styles.switchContainer}>
             <View style={styles.switchRow}>
-              <MaterialIcons name="deck" size={24} color="#2196F3" />
+              <MaterialIcons name="deck" size={24} color={premiumTheme.colors.accent} />
               <Text style={styles.switchLabel}>Balcone/Terrazza</Text>
             </View>
             <Switch
               value={balconyOrTerrace}
               onValueChange={setBalconyOrTerrace}
-              trackColor={{ false: '#E0E0E0', true: '#2196F3' }}
+              trackColor={{ false: premiumTheme.colors.border, true: premiumTheme.colors.accent }}
               thumbColor="#fff"
             />
           </View>
 
           <View style={styles.switchContainer}>
             <View style={styles.switchRow}>
-              <MaterialIcons name="flight" size={24} color="#2196F3" />
+              <MaterialIcons name="flight" size={24} color={premiumTheme.colors.accent} />
               <Text style={styles.switchLabel}>Vicino Aeroporto</Text>
             </View>
             <Switch
               value={nearAirport}
               onValueChange={setNearAirport}
-              trackColor={{ false: '#E0E0E0', true: '#2196F3' }}
+              trackColor={{ false: premiumTheme.colors.border, true: premiumTheme.colors.accent }}
               thumbColor="#fff"
             />
           </View>
 
           <View style={styles.switchContainer}>
             <View style={styles.switchRow}>
-              <MaterialIcons name="check-circle" size={24} color="#2196F3" />
+              <MaterialIcons name="check-circle" size={24} color={premiumTheme.colors.accent} />
               <Text style={styles.switchLabel}>Disponibile Ora</Text>
             </View>
             <Switch
               value={available}
               onValueChange={setAvailable}
-              trackColor={{ false: '#E0E0E0', true: '#2196F3' }}
+              trackColor={{ false: premiumTheme.colors.border, true: premiumTheme.colors.accent }}
               thumbColor="#fff"
             />
           </View>
@@ -547,7 +549,7 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
                 <MaterialIcons
                   name={amenity.icon as any}
                   size={24}
-                  color={selectedAmenities.includes(amenity.label) ? '#fff' : '#2196F3'}
+                  color={selectedAmenities.includes(amenity.label) ? '#fff' : premiumTheme.colors.accent}
                 />
                 <Text style={[
                   styles.amenityButtonText,
@@ -568,8 +570,10 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
           onPress={handleSave}
           disabled={photos.length < minPhotos || !title || !description || !address || !location || !rent || !bedrooms || !bathrooms || !squareMeters}
         >
-          <MaterialIcons name="check" size={24} color="#fff" />
-          <Text style={styles.saveButtonText}>Pubblica Annuncio</Text>
+          <LinearGradient colors={premiumTheme.gradients.cta} style={styles.saveButtonGradient}>
+            <MaterialIcons name="check" size={22} color="#fff" />
+            <Text style={styles.saveButtonText}>Pubblica Annuncio</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
 
@@ -588,7 +592,7 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: premiumTheme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -596,14 +600,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    backgroundColor: premiumTheme.colors.background,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
+    fontFamily: premiumTheme.typography.display,
   },
   scrollContent: {
     padding: 20,
@@ -614,14 +617,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
     marginBottom: 8,
+    fontFamily: premiumTheme.typography.display,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     marginBottom: 16,
+    fontFamily: premiumTheme.typography.body,
   },
   photosScroll: {
     marginTop: 12,
@@ -633,7 +638,7 @@ const styles = StyleSheet.create({
   photo: {
     width: 150,
     height: 150,
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.card,
   },
   removePhotoButton: {
     position: 'absolute',
@@ -646,19 +651,20 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     width: 150,
     height: 150,
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.card,
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: premiumTheme.colors.accent,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E8F9F7',
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   addPhotoText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: premiumTheme.colors.accent,
     marginTop: 8,
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
   row: {
     flexDirection: 'row',
@@ -676,17 +682,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: premiumTheme.colors.ink,
     marginBottom: 8,
+    fontFamily: premiumTheme.typography.body,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     padding: 16,
     fontSize: 16,
-    color: '#333',
+    color: premiumTheme.colors.ink,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
+    fontFamily: premiumTheme.typography.body,
   },
   textArea: {
     height: 120,
@@ -696,12 +704,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   switchRow: {
     flexDirection: 'row',
@@ -710,8 +718,9 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
-    color: '#333',
+    color: premiumTheme.colors.ink,
     fontWeight: '500',
+    fontFamily: premiumTheme.typography.body,
   },
   amenitiesGrid: {
     flexDirection: 'row',
@@ -722,72 +731,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: premiumTheme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.input,
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: premiumTheme.colors.accent,
     minWidth: '45%',
   },
   amenityButtonSelected: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: premiumTheme.colors.accent,
+    borderColor: premiumTheme.colors.accent,
   },
   amenityButtonText: {
     fontSize: 14,
-    color: '#2196F3',
+    color: premiumTheme.colors.accent,
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
   amenityButtonTextSelected: {
     color: '#fff',
   },
   saveButton: {
+    borderRadius: premiumTheme.radii.button,
+    overflow: 'hidden',
+    marginTop: 20,
+    ...premiumTheme.shadows.lift,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonGradient: {
     flexDirection: 'row',
-    backgroundColor: '#2196F3',
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-    marginTop: 20,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#CCC',
-    shadowOpacity: 0,
   },
   saveButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
   // Analyzer styles
   analyzerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 16,
     marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
+    ...premiumTheme.shadows.card,
   },
   analyzerInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
+    borderColor: premiumTheme.colors.border,
+    borderRadius: premiumTheme.radii.input,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: premiumTheme.colors.surfaceMuted,
     marginBottom: 16,
+    color: premiumTheme.colors.ink,
+    fontFamily: premiumTheme.typography.body,
   },
   analyzerButtons: {
     flexDirection: 'row',
@@ -800,23 +808,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: premiumTheme.radii.input,
     gap: 8,
   },
   analyzerButtonPrimary: {
-    backgroundColor: '#667eea',
+    backgroundColor: premiumTheme.colors.navy,
   },
   analyzerButtonSecondary: {
-    backgroundColor: '#F0F4FF',
+    backgroundColor: premiumTheme.colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#667eea',
+    borderColor: premiumTheme.colors.navy,
   },
   analyzerButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#667eea',
+    color: premiumTheme.colors.navy,
+    fontFamily: premiumTheme.typography.body,
   },
   analyzerButtonTextPrimary: {
     color: '#fff',
+    fontFamily: premiumTheme.typography.body,
   },
 });

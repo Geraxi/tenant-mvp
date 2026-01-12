@@ -69,3 +69,6 @@ echo "Now you can start the server with:"
 echo "  npm run dev"
 echo ""
 
+
+
+

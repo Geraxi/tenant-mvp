@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.tenant.rental',
+  appId: 'com.mytenant.tenantapp',
   appName: 'Tenant',
   webDir: 'dist/public',
   server: process.env.NODE_ENV === 'development' 
     ? {
-        url: 'http://192.168.1.21:5000',
+        url: 'http://192.168.1.14:5000',
         cleartext: true,
       }
     : undefined, // Production: serve from webDir, no external server

@@ -7,11 +7,22 @@ import { MobileFrame } from "@/components/MobileFrame";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
+import { OnboardingGate } from "@/lib/onboarding/OnboardingGate";
+import { ClerkProvider, clerkPublishableKey } from "@/lib/clerk";
+// Import dev helpers in development
+if (import.meta.env.DEV) {
+  import("@/lib/onboarding/devHelpers");
+}
 
 import Auth from "@/pages/Auth";
 import RoleSelection from "@/pages/RoleSelection";
-import Onboarding from "@/pages/Onboarding";
 import ResetPassword from "@/pages/ResetPassword";
+import SsoCallback from "@/pages/SsoCallback";
+import TenantWelcome from "@/pages/TenantWelcome";
+import TenantProfileStep1 from "@/pages/TenantProfileStep1";
+import LandlordWelcome from "@/pages/LandlordWelcome";
+import LandlordLanding from "@/pages/LandlordLanding";
+import LandlordIntro from "@/pages/LandlordIntro";
 import TenantHome from "@/pages/TenantHome";
 import Favorites from "@/pages/Favorites";
 import PropertyDetails from "@/pages/PropertyDetails";
@@ -32,7 +43,9 @@ import Paywall from "@/pages/Paywall";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Auth} />
+      <Route path="/" component={OnboardingGate} />
+      <Route path="/auth" component={Auth} />
+      <Route path="/sso-callback" component={SsoCallback} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/paywall">
@@ -40,7 +53,17 @@ function Router() {
       </Route>
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/role" component={RoleSelection} />
-      <Route path="/onboarding" component={Onboarding} />
+      
+      {/* Tenant Onboarding Routes */}
+      <Route path="/tenant/welcome">
+        {() => <ProtectedRoute requiredRole="tenant"><TenantWelcome /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant/profile/step-1">
+        {() => <ProtectedRoute requiredRole="tenant"><TenantProfileStep1 /></ProtectedRoute>}
+      </Route>
+      <Route path="/tenant/home">
+        {() => <ProtectedRoute requiredRole="tenant"><TenantHome /></ProtectedRoute>}
+      </Route>
       
       {/* Tenant Routes */}
       <Route path="/tenant">
@@ -68,6 +91,20 @@ function Router() {
         {() => <ProtectedRoute><TenantDetails /></ProtectedRoute>}
       </Route>
 
+      {/* Landlord Onboarding Routes */}
+      <Route path="/landlord/landing">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordLanding /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/welcome">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordWelcome /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/intro">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordIntro /></ProtectedRoute>}
+      </Route>
+      <Route path="/landlord/home">
+        {() => <ProtectedRoute requiredRole="landlord"><LandlordHome /></ProtectedRoute>}
+      </Route>
+      
       {/* Landlord Routes */}
       <Route path="/landlord">
         {() => <ProtectedRoute requiredRole="landlord"><LandlordHome /></ProtectedRoute>}
@@ -103,14 +140,16 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <MobileFrame>
-            <Router />
-            <Toaster />
-          </MobileFrame>
-        </LanguageProvider>
-      </QueryClientProvider>
+      <ClerkProvider publishableKey={clerkPublishableKey}>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <MobileFrame>
+              <Router />
+              <Toaster />
+            </MobileFrame>
+          </LanguageProvider>
+        </QueryClientProvider>
+      </ClerkProvider>
     </ErrorBoundary>
   );
 }

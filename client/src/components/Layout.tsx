@@ -2,11 +2,79 @@ import { Home, Heart, MessageCircle, User, ListPlus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import logo from "@assets/logo-removebg-preview_1765398497308.png";
 
 export function BottomNav({ role }: { role: "tenant" | "landlord" }) {
   const [location] = useLocation();
   const { t } = useLanguage();
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Use useEffect to check route on mount and when location changes
+  useEffect(() => {
+    // Get current path from both wouter and window.location for maximum reliability
+    const wouterPath = location || '';
+    const windowPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const currentPath = wouterPath || windowPath;
+    
+    // Hide bottom nav on auth pages, role selection, and onboarding pages
+    const hideNavRoutes = [
+      "/auth",
+      "/role",
+      "/tenant/welcome",
+      "/tenant/profile/step-1",
+      "/tenant/verify",
+      "/tenant/intro",
+      "/landlord/welcome",
+      "/landlord/landing",
+      "/landlord/intro",
+      "/landlord/criteria",
+      "/landlord/verify",
+      "/landlord/add-property",
+      "/landlord/property",
+      "/landlord/publish",
+      "/reset-password",
+      "/terms",
+      "/privacy-policy",
+      "/paywall",
+    ];
+
+    // Check if current path matches any hidden route (exact match or starts with)
+    const matchesHiddenRoute = hideNavRoutes.some(route => {
+      return currentPath === route || currentPath.startsWith(route + "/");
+    });
+
+    // Also check if we're on root path or any auth-related path
+    const isAuthOrRoot = currentPath === "/" || 
+                         currentPath === "" || 
+                         currentPath.includes("auth") ||
+                         currentPath.includes("role") ||
+                         currentPath.includes("reset-password") ||
+                         currentPath.includes("signup") ||
+                         currentPath.includes("login");
+
+    // Determine if we should render the nav
+    const shouldHide = matchesHiddenRoute || 
+                       isAuthOrRoot || 
+                       currentPath === "/" ||
+                       currentPath === "/auth" ||
+                       !currentPath || 
+                       currentPath.trim() === "" ||
+                       (typeof window !== 'undefined' && window.location.pathname === "/auth") ||
+                       (typeof window !== 'undefined' && window.location.pathname.startsWith("/auth"));
+
+    setShouldRender(!shouldHide);
+  }, [location]);
+
+  // Get current path for the rest of the component
+  const wouterPath = location || '';
+  const windowPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const currentPath = wouterPath || windowPath;
+  
+  // Don't render if shouldRender is false (determined by useEffect)
+  if (!shouldRender) {
+    return null;
+  }
 
   const tenantLinks = [
     { href: "/tenant", icon: Home, label: t("nav.home") },

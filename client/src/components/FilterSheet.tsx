@@ -21,7 +21,7 @@ const getDefaultFilters = (): FilterOptions => ({
 });
 
 interface FilterSheetProps {
-  type: "property" | "roommate";
+  type: "property" | "roommate" | "both";
   onApply?: (filters: FilterOptions) => void;
   trigger?: React.ReactNode;
   currentFilters?: FilterOptions | null;
@@ -75,7 +75,7 @@ export function FilterSheet({ type, onApply, trigger, currentFilters }: FilterSh
         </SheetHeader>
         
         <div className="space-y-6 pb-6">
-          {type === "property" ? (
+          {(type === "property" || type === "both") && (
             <>
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-3 block">
@@ -141,7 +141,8 @@ export function FilterSheet({ type, onApply, trigger, currentFilters }: FilterSh
                 </div>
               </div>
             </>
-          ) : (
+          )}
+          {(type === "roommate" || type === "both") && (
             <>
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-3 block">

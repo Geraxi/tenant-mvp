@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface OnboardingDiscoverScreenProps {
   onComplete: () => void;
@@ -25,11 +26,11 @@ export default function OnboardingDiscoverScreen({
   totalSteps,
 }: OnboardingDiscoverScreenProps) {
   return (
-    <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#1A1A1A" />
+          <MaterialIcons name="arrow-back" size={22} color={premiumTheme.colors.ink} />
         </TouchableOpacity>
         <View style={styles.placeholder} />
       </View>
@@ -56,8 +57,8 @@ export default function OnboardingDiscoverScreen({
           {/* Feature Cards */}
           <View style={styles.featuresContainer}>
             <View style={styles.featureCard}>
-              <View style={[styles.featureIcon, { backgroundColor: '#E3F2FD' }]}>
-                <MaterialIcons name="explore" size={32} color="#2196F3" />
+              <View style={[styles.featureIcon, { backgroundColor: premiumTheme.colors.sky }]}>
+                <MaterialIcons name="explore" size={28} color={premiumTheme.colors.navy} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Esplora</Text>
@@ -68,8 +69,8 @@ export default function OnboardingDiscoverScreen({
             </View>
 
             <View style={styles.featureCard}>
-              <View style={[styles.featureIcon, { backgroundColor: '#FFEBEE' }]}>
-                <MaterialIcons name="favorite" size={32} color="#F44336" />
+              <View style={[styles.featureIcon, { backgroundColor: premiumTheme.colors.accentSoft }]}>
+                <MaterialIcons name="favorite" size={28} color={premiumTheme.colors.accentDark} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>Corrispondenze</Text>
@@ -92,7 +93,7 @@ export default function OnboardingDiscoverScreen({
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.startButton} onPress={onComplete}>
             <LinearGradient
-              colors={['#2196F3', '#1976D2']}
+              colors={premiumTheme.gradients.cta}
               style={styles.buttonGradient}
             >
               <Text style={styles.buttonText}>Inizia Ora!</Text>
@@ -107,7 +108,7 @@ export default function OnboardingDiscoverScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: premiumTheme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -115,8 +116,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: premiumTheme.colors.background,
   },
   backButton: {
     padding: 4,
@@ -147,22 +147,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: '800',
+    color: premiumTheme.colors.ink,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 32,
+    fontFamily: premiumTheme.typography.display,
   },
   featuresContainer: {
     gap: 16,
     marginBottom: 24,
   },
   featureCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
+    ...premiumTheme.shadows.card,
   },
   featureIcon: {
     width: 56,
@@ -178,13 +182,15 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: premiumTheme.colors.ink,
     marginBottom: 8,
+    fontFamily: premiumTheme.typography.display,
   },
   featureText: {
     fontSize: 14,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     lineHeight: 20,
+    fontFamily: premiumTheme.typography.body,
   },
   pagination: {
     flexDirection: 'row',
@@ -196,25 +202,21 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: premiumTheme.colors.border,
   },
   dotActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: premiumTheme.colors.accent,
     width: 24,
   },
   buttonContainer: {
     paddingTop: 16,
     paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: premiumTheme.colors.background,
   },
   startButton: {
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.button,
     overflow: 'hidden',
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    ...premiumTheme.shadows.lift,
   },
   buttonGradient: {
     paddingVertical: 16,
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: premiumTheme.typography.body,
   },
 });
-

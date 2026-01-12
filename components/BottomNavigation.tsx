@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { logger } from '../src/utils/logger';
 
-type NavScreen = 'discover' | 'matches' | 'messages' | 'profilo';
+type NavScreen = 'discover' | 'properties' | 'matches' | 'messages' | 'profilo';
 
 interface BottomNavigationProps {
   currentScreen: NavScreen;
@@ -23,6 +23,9 @@ export default function BottomNavigation({
   logger.debug('🔵 BottomNavigation - Component is being rendered!');
   const navItems: { screen: NavScreen; icon: string; label: string }[] = [
     { screen: 'discover', icon: 'search', label: userRole === 'landlord' ? 'Browse' : 'Scopri' },
+    ...(userRole === 'landlord'
+      ? [{ screen: 'properties', icon: 'business', label: 'Immobili' as const }]
+      : []),
     { screen: 'matches', icon: 'favorite', label: userRole === 'landlord' ? 'Matches' : 'Match' },
     { screen: 'messages', icon: 'message', label: userRole === 'landlord' ? 'Messages' : 'Messaggi' },
     { screen: 'profilo', icon: 'person', label: userRole === 'landlord' ? 'Profile' : 'Profilo' },

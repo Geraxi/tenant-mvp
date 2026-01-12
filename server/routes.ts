@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import type { Server as HTTPServer } from "http";
-import { setupAuth, isAuthenticated } from "./supabaseAuth";
+import { setupAuth, isAuthenticated } from "./clerkAuth";
 import { storage } from "./storage";
 import {
   insertPropertySchema,
@@ -10,6 +10,7 @@ import {
   insertMessageSchema,
   insertReportSchema,
   insertBlockSchema,
+  type User,
 } from "@shared/schema";
 import { stripeService } from "./stripeService";
 import { getStripePublishableKey } from "./stripeClient";
@@ -313,7 +314,7 @@ export async function registerRoutes(
       
       const matchesWithOtherUser = await Promise.all(matches.map(async (match) => {
         const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
-        const otherUser = await storage.getUser(otherUserId);
+        const otherUser: User | undefined = await storage.getUser(otherUserId);
         return {
           ...match,
           otherUserId,
@@ -321,7 +322,7 @@ export async function registerRoutes(
             id: otherUser.id,
             firstName: otherUser.firstName,
             lastName: otherUser.lastName,
-            profilePhoto: otherUser.profilePhoto,
+            profileImageUrl: (otherUser as User)['profileImageUrl'] || null,
           } : null,
         };
       }));
@@ -342,7 +343,7 @@ export async function registerRoutes(
       }
       
       const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
-      const otherUser = await storage.getUser(otherUserId);
+      const otherUser: User | undefined = await storage.getUser(otherUserId);
       
       res.json({
         ...match,
@@ -351,7 +352,7 @@ export async function registerRoutes(
           id: otherUser.id,
           firstName: otherUser.firstName,
           lastName: otherUser.lastName,
-          profilePhoto: otherUser.profilePhoto,
+          profileImageUrl: (otherUser as User)['profileImageUrl'] || null,
         } : null,
       });
     } catch (error: any) {

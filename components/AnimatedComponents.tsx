@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MotiView, MotiText, useAnimationState } from 'moti';
+import { LinearGradient } from 'expo-linear-gradient';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface FadeInProps {
   children: React.ReactNode;
@@ -76,6 +78,8 @@ interface AnimatedButtonProps {
   style?: any;
   textStyle?: any;
   icon?: React.ReactNode;
+  backgroundColor?: string;
+  gradientColors?: [string, string];
 }
 
 export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
@@ -87,6 +91,8 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   style,
   textStyle,
   icon,
+  backgroundColor,
+  gradientColors,
 }) => {
   const buttonState = useAnimationState({
     from: {
@@ -102,27 +108,42 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   const getBackgroundColor = () => {
     switch (variant) {
       case 'primary':
-        return 'rgba(255, 255, 255, 0.2)';
+        return premiumTheme.colors.accent;
       case 'secondary':
-        return 'rgba(255, 255, 255, 0.15)';
+        return premiumTheme.colors.surface;
       case 'tertiary':
         return 'transparent';
       default:
-        return 'rgba(255, 255, 255, 0.2)';
+        return premiumTheme.colors.accent;
     }
   };
 
   const getTextColor = () => {
     switch (variant) {
       case 'primary':
-      case 'secondary':
         return '#FFFFFF';
+      case 'secondary':
+        return premiumTheme.colors.ink;
       case 'tertiary':
-        return '#4A90E2';
+        return premiumTheme.colors.accent;
       default:
         return '#FFFFFF';
     }
   };
+
+  const content = loading ? (
+    <ActivityIndicator color={getTextColor()} />
+  ) : (
+    <View style={styles.buttonContent}>
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
+      <Text style={[styles.buttonText, { color: getTextColor() }, textStyle]}>
+        {title}
+      </Text>
+    </View>
+  );
+
+  const useGradient = variant === 'primary' && !backgroundColor;
+  const resolvedBackground = backgroundColor ?? getBackgroundColor();
 
   return (
     <MotiView
@@ -137,20 +158,15 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         onPress={onPress}
         disabled={disabled || loading}
         activeOpacity={0.8}
-        style={[
-          styles.cleanButton,
-          { backgroundColor: getBackgroundColor() },
-          { opacity: disabled ? 0.6 : 1 }
-        ]}
+        style={[styles.touchable, { opacity: disabled ? 0.6 : 1 }]}
       >
-        {loading ? (
-          <ActivityIndicator color={getTextColor()} />
+        {useGradient ? (
+          <LinearGradient colors={gradientColors ?? premiumTheme.gradients.cta} style={styles.primaryButton}>
+            {content}
+          </LinearGradient>
         ) : (
-          <View style={styles.buttonContent}>
-            {icon && <View style={styles.iconContainer}>{icon}</View>}
-            <Text style={[styles.buttonText, { color: getTextColor() }, textStyle]}>
-              {title}
-            </Text>
+          <View style={[styles.cleanButton, { backgroundColor: resolvedBackground }]}>
+            {content}
           </View>
         )}
       </TouchableOpacity>
@@ -167,35 +183,45 @@ interface GradientCardProps {
 export const GradientCard: React.FC<GradientCardProps> = ({ 
   children, 
   style, 
-  colors = ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)'] as [string, string]
+  colors = [premiumTheme.colors.surface, premiumTheme.colors.surfaceMuted] as [string, string]
 }) => {
   return (
-    <View style={[styles.gradientCard, style]}>
+    <LinearGradient colors={colors} style={[styles.gradientCard, style]}>
       {children}
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.button,
     overflow: 'hidden',
+  },
+  touchable: {
+    borderRadius: premiumTheme.radii.button,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 340,
+  },
+  primaryButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: premiumTheme.radii.button,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 54,
   },
   cleanButton: {
     paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    borderRadius: premiumTheme.radii.button,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    minHeight: 50,
-    width: 280,
-    shadowOpacity: 0,
-    elevation: 0,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 0,
-    borderWidth: 0,
+    minHeight: 54,
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -207,16 +233,13 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.body,
   },
   gradientCard: {
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    shadowOpacity: 0,
-    elevation: 0,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 0,
+    borderRadius: premiumTheme.radii.card,
+    padding: 18,
+    ...premiumTheme.shadows.card,
   },
 });

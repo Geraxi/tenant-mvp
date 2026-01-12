@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import RangeSlider from '../components/RangeSlider';
+import { LinearGradient } from 'expo-linear-gradient';
+import { premiumTheme } from '../styles/premiumTheme';
 
 interface LandlordPreferencesScreenProps {
   onComplete: (preferences: any) => void;
@@ -109,6 +111,12 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Preferenze Inquilino</Text>
+          <Text style={styles.subtitle}>
+            Definisci i requisiti ideali per i tuoi inquilini.
+          </Text>
+        </View>
         <Text style={styles.sectionTitle}>Stato di Occupazione</Text>
         <View style={styles.optionsGrid}>
           {employmentOptions.map((option) => (
@@ -126,7 +134,7 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
               <MaterialIcons 
                 name={option.icon as any} 
                 size={24} 
-                color={preferences.employmentStatus.includes(option.id) ? '#2196F3' : '#666'} 
+                color={preferences.employmentStatus.includes(option.id) ? premiumTheme.colors.accent : premiumTheme.colors.inkMuted} 
               />
               <Text style={[
                 styles.optionText,
@@ -381,7 +389,7 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
               maxOccupants: Math.max(1, prev.maxOccupants - 1)
             }))}
           >
-            <MaterialIcons name="remove" size={20} color="#666" />
+            <MaterialIcons name="remove" size={20} color={premiumTheme.colors.inkMuted} />
           </TouchableOpacity>
           <Text style={styles.occupantValue}>{preferences.maxOccupants}</Text>
           <TouchableOpacity
@@ -391,7 +399,7 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
               maxOccupants: Math.min(10, prev.maxOccupants + 1)
             }))}
           >
-            <MaterialIcons name="add" size={20} color="#666" />
+            <MaterialIcons name="add" size={20} color={premiumTheme.colors.inkMuted} />
           </TouchableOpacity>
         </View>
       </View>
@@ -401,7 +409,9 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
           <Text style={styles.skipButtonText}>Salta per ora</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
-          <Text style={styles.continueButtonText}>Continua</Text>
+          <LinearGradient colors={premiumTheme.gradients.cta} style={styles.continueButtonGradient}>
+            <Text style={styles.continueButtonText}>Continua</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -411,17 +421,34 @@ export default function LandlordPreferencesScreen({ onComplete, onSkip }: Landlo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: premiumTheme.colors.background,
+  },
+  header: {
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
+    marginBottom: 6,
+    fontFamily: premiumTheme.typography.display,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: premiumTheme.colors.inkMuted,
+    lineHeight: 20,
+    fontFamily: premiumTheme.typography.body,
   },
   content: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
     marginBottom: 15,
     marginTop: 20,
+    fontFamily: premiumTheme.typography.display,
   },
   optionsGrid: {
     flexDirection: 'row',
@@ -431,26 +458,27 @@ const styles = StyleSheet.create({
   optionCard: {
     width: '30%',
     aspectRatio: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 15,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   optionCardSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: premiumTheme.colors.accent,
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   optionText: {
     fontSize: 12,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     marginTop: 8,
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.body,
   },
   optionTextSelected: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '600',
   },
   optionsRow: {
@@ -460,51 +488,55 @@ const styles = StyleSheet.create({
   optionButton: {
     flex: 1,
     paddingVertical: 15,
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.input,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   optionButtonSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: premiumTheme.colors.accent,
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   optionButtonText: {
     fontSize: 16,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     fontWeight: '500',
+    fontFamily: premiumTheme.typography.body,
   },
   optionButtonTextSelected: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '600',
   },
   optionChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'white',
-    borderRadius: 20,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.pill,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
   },
   optionChipSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: premiumTheme.colors.accent,
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   optionChipText: {
     fontSize: 14,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
+    fontFamily: premiumTheme.typography.body,
   },
   optionChipTextSelected: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '600',
   },
   characteristicsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 15,
     marginHorizontal: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
   },
   characteristicRow: {
     flexDirection: 'row',
@@ -512,15 +544,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: premiumTheme.colors.border,
   },
   characteristicLabel: {
     fontSize: 16,
-    color: '#333',
+    color: premiumTheme.colors.ink,
     flex: 1,
     flexShrink: 0,
     minWidth: 80,
     marginRight: 10,
+    fontFamily: premiumTheme.typography.body,
   },
   characteristicOptions: {
     flexDirection: 'row',
@@ -531,49 +564,53 @@ const styles = StyleSheet.create({
   characteristicOption: {
     paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: premiumTheme.radii.pill,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
     flex: 1,
     alignItems: 'center',
     maxWidth: 80,
   },
   characteristicOptionSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
+    borderColor: premiumTheme.colors.accent,
+    backgroundColor: premiumTheme.colors.accentSoft,
   },
   characteristicOptionText: {
     fontSize: 11,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.body,
   },
   characteristicOptionTextSelected: {
-    color: '#2196F3',
+    color: premiumTheme.colors.ink,
     fontWeight: '600',
   },
   occupantsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: premiumTheme.colors.surface,
+    borderRadius: premiumTheme.radii.card,
     padding: 20,
     gap: 20,
+    borderWidth: 1,
+    borderColor: premiumTheme.colors.border,
   },
   occupantButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: premiumTheme.colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   occupantValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: premiumTheme.colors.ink,
     minWidth: 40,
     textAlign: 'center',
+    fontFamily: premiumTheme.typography.display,
   },
   footer: {
     flexDirection: 'row',
@@ -584,26 +621,31 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: premiumTheme.radii.button,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: premiumTheme.colors.border,
+    backgroundColor: premiumTheme.colors.surface,
   },
   skipButtonText: {
     fontSize: 16,
-    color: '#666',
+    color: premiumTheme.colors.inkMuted,
+    fontFamily: premiumTheme.typography.body,
   },
   continueButton: {
     flex: 2,
+    borderRadius: premiumTheme.radii.button,
+    overflow: 'hidden',
+    ...premiumTheme.shadows.lift,
+  },
+  continueButtonGradient: {
     paddingVertical: 15,
-    backgroundColor: '#2196F3',
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
   },
   continueButtonText: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
+    fontFamily: premiumTheme.typography.body,
   },
 });
-
-

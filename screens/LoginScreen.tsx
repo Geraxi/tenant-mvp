@@ -13,11 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { useAuth, useSSO } from '@clerk/clerk-expo';
+import * as AuthSession from 'expo-auth-session';
 // import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import Logo from '../components/Logo';
 import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
 import { FadeIn, ScaleIn, AnimatedButton, GradientCard } from '../components/AnimatedComponents';
 import GoogleLogo from '../components/GoogleLogo';
+import { getOAuthErrorMessage } from '../utils/oauthConfigValidator';
 
 import { logger } from '../src/utils/logger';
 
@@ -44,8 +47,12 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
   const [signupNameFocused, setSignupNameFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   
   const { signIn, signUp, checkExistingUsers, signInWithApple } = useSupabaseAuth();
+  const { isLoaded } = useAuth();
+  const oauthRedirectUrl = AuthSession.makeRedirectUri({ path: 'sso-callback' });
+  const { startSSOFlow } = useSSO();
 
   // Configure Google Sign In - temporarily disabled
   // React.useEffect(() => {
@@ -57,8 +64,46 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
   //   });
   // }, []);
 
-  const handleGoogleLogin = () => {
-    Alert.alert('Info', 'Login con Google sarà disponibile presto');
+  const handleGoogleLogin = async () => {
+    if (googleLoading) {
+      return;
+    }
+
+    try {
+      setGoogleLoading(true);
+
+      if (!isLoaded) {
+        throw new Error('Clerk is not loaded yet. Please wait a moment and try again.');
+      }
+
+      const result = await startSSOFlow({ strategy: 'oauth_google', redirectUrl: oauthRedirectUrl });
+      const { createdSessionId, setActive, authSessionResult } = result;
+
+      console.log('[LoginScreen] OAuth authSessionResult:', authSessionResult);
+
+      if (!createdSessionId) {
+        if (authSessionResult?.type && authSessionResult.type !== 'success') {
+          throw new Error(`OAuth flow ${authSessionResult.type}. Please try again.`);
+        }
+        throw new Error(
+          `OAuth flow did not create a session. Ensure this redirect URL is allowed in Clerk and Google: ${oauthRedirectUrl}`
+        );
+      }
+      if (!setActive) {
+        throw new Error('Session activation is not available. Please try again.');
+      }
+
+      await setActive({ session: createdSessionId });
+
+      setTimeout(() => {
+        onLoginSuccess();
+      }, 400);
+    } catch (error: any) {
+      console.error('[LoginScreen] Google OAuth error:', error);
+      Alert.alert('Errore', getOAuthErrorMessage(error));
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleAppleLogin = async () => {
@@ -215,9 +260,6 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
             <ScaleIn delay={400}>
               <Logo size="large" />
             </ScaleIn>
-            <FadeIn delay={600}>
-              <Text style={styles.appName}>Tenant</Text>
-            </FadeIn>
           </View>
         </FadeIn>
 
@@ -236,7 +278,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
         {showLoginForm && (
           <FadeIn delay={200} from="bottom">
             <GradientCard 
-              colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
+              colors={[premiumTheme.colors.surface, premiumTheme.colors.surfaceMuted]}
               style={styles.loginForm}
             >
               <FadeIn delay={400}>
@@ -300,6 +342,8 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
                   variant="primary"
                   disabled={isLoading}
                   style={styles.mainButton}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
+                  textStyle={{ color: '#FFFFFF' }}
                 />
               </FadeIn>
 
@@ -319,7 +363,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
         {showSignupForm && (
           <FadeIn delay={200} from="bottom">
             <GradientCard 
-              colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.1)']}
+              colors={[premiumTheme.colors.surface, premiumTheme.colors.surfaceMuted]}
               style={styles.loginForm}
             >
               <FadeIn delay={400}>
@@ -425,6 +469,8 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
                   variant="primary"
                   disabled={isLoading}
                   style={styles.mainButton}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
+                  textStyle={{ color: '#FFFFFF' }}
                 />
               </FadeIn>
 
@@ -446,22 +492,22 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
             <View style={styles.socialContainer}>
               <FadeIn delay={1500}>
                 <AnimatedButton
-                  title="Accedi con Google Account"
+                  title={googleLoading ? "Accedendo..." : "Accedi con Google Account"}
                   onPress={handleGoogleLogin}
                   variant="primary"
                   style={styles.socialButton}
                   icon={<GoogleLogo size={20} />}
+                  disabled={googleLoading}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
+                  textStyle={{ color: '#FFFFFF' }}
                 />
               </FadeIn>
               
               <FadeIn delay={1600}>
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                  cornerRadius={12}
-                  style={styles.appleButton}
-                  onPress={handleAppleLogin}
-                />
+                <TouchableOpacity style={styles.appleButton} onPress={handleAppleLogin}>
+                  <MaterialIcons name="apple" size={20} color="#000" />
+                  <Text style={styles.appleButtonText}>Accedi con Apple</Text>
+                </TouchableOpacity>
               </FadeIn>
             </View>
           </FadeIn>
@@ -481,6 +527,8 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
                   onPress={handleLoginWithAccount}
                   variant="primary"
                   style={styles.mainButton}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
+                  textStyle={{ color: '#FFFFFF' }}
                 />
               </FadeIn>
 
@@ -494,6 +542,8 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
                   onPress={handleCreateAccount}
                   variant="primary"
                   style={styles.mainButton}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
+                  textStyle={{ color: '#FFFFFF' }}
                 />
               </FadeIn>
             </View>
@@ -519,29 +569,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 5,
   },
-  appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 5,
-  },
   welcomeTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   welcomeSubtitle: {
     fontSize: 16,
     color: '#E0E0E0',
     textAlign: 'center',
-    marginBottom: 55,
+    marginBottom: 32,
     lineHeight: 22,
   },
   socialContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   socialButton: {
     marginBottom: 20,
@@ -552,6 +596,17 @@ const styles = StyleSheet.create({
   appleButton: {
     width: 280,
     height: 50,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  appleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
   },
   mainButton: {
     marginBottom: 30,

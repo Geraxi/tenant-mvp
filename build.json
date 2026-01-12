@@ -1,0 +1,53 @@
+{
+  "id": "3781f33f-c3e0-4aad-8046-3b4eac5d363f",
+  "status": "ERRORED",
+  "platform": "IOS",
+  "error": {
+    "errorCode": "UNKNOWN_ERROR",
+    "message": "Unknown error. See logs of the Prebuild build phase for more information."
+  },
+  "artifacts": {
+    "xcodeBuildLogsUrl": "https://job-logs.eascdn.net/production-xcode-logs/3781f33f-c3e0-4aad-8046-3b4eac5d363f?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251221T151611Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=56197c7fd7580748321cb997306b0f39087b7d63979aef07c6931cc63fad4793783cd5f618f17a12cae8ababc54adc8b0a0b093a4e2a622066b3734224864f6e243ee8e3c41ad212a0b7e6c8c6541c095e43390fff66b3bfe80dfc5c644432df9457780e037960e71d6993a35a54c26c29cdc5c7cbf4da1af105cabc8593232952e94e481e69b40d574c803ecad5d71699d07e4a553c5fae74ab03814b8abaa856c6d858776fb4496dca2890653c56a0d243abc740a5af4b76749e725eb71b97ef22b7823717ccceb65f4c6e845afe6f929f918d99f19f2fe1dedd274a930f0adaee114eb711d210c1cf758ea7089b4b38e88a75ae8e4807b78447ea0088b1c0"
+  },
+  "fingerprint": {
+    "id": "7e9a2651-6aaa-495f-870a-f3c2687e34f2",
+    "hash": "83d223b77b2b1a347da6581e1ebd9cfcd3abe71e"
+  },
+  "initiatingActor": {
+    "id": "9ded7648-89d6-44cb-a81a-15dec04b6f75",
+    "displayName": "ugeraci97"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/3781f33f-c3e0-4aad-8046-3b4eac5d363f/1766330031894-c83d8d9d-47df-4fc8-a394-2b10ba3fdf16.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251221T151611Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=68989c092f5898ad1d60ba29d7ab346a014879af4ef73f1b663f75ab6f0b921dfde112a56d896df20e8b23a1bfe81edd9e5dc8c19fb76b6c02d1c5efeefa0966ca1d77c52b3dc340ac3cda98af81f905d8bb78f8408945f65962155faed6ac261c7afff8182afd2b6f5b85d25ce9ab6dbcd52df60064bee65be562c45671a2b5af5bddcb6d08136f3c4b04eeab2cc271a97af11508c737485413e9a1e73bb7105b63a157a5fceb7588a8c2dbba6add0935e4dba2e20df49d2a9e4bcdea5473d4fdca58b199e46127ffb2fc1b73394e798164039420b7fc32fe759e2d06bd345bc7b68f8f589b6f2e7bc220e69a65ed9d9013332f0b9e75589b1236e8aa5a7145",
+    "https://job-logs.eascdn.net/production/3781f33f-c3e0-4aad-8046-3b4eac5d363f/1766330035325-64c217db-02ca-44de-a2b8-6e4188c2006a.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251221T151611Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=867a88891a794517041ca7553e042140e5f337805880cc7e758121b46a5c1df0635cd0b58d9067aab15f630a4f225b7f5f1ef3d2efbb5ad074d5d902eba1aefafe157ab54feb8f3baa980af6fa7d7e202fd54b188066c7995dc4c0f22657bc44c9cb19dd7fdf16fbf9f6570652dff3f1c40234212c58f07e253534d0071266cc5df4130a66320325823a81383a84614cbee8aff2702ed20a4c195dfccd48c43bc6018b88c97a518bc6d402e8f178a4f84dc3a8f84db108773078215649efd1e047efe73bcaa813a23f13ef1f0b84eaa11404ddd579142bec50c929d038e21553d761bab6f2eed1b5c10b0453e233d2c27c09a4a5bfa3b6c70014cf687b0c5015",
+    "https://job-logs.eascdn.net/production/3781f33f-c3e0-4aad-8046-3b4eac5d363f/1766330035576-1056bc18-b263-4512-b8ef-e92b1ae76a9b.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251221T151611Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=a84e7abd3dd9124cb5a039b40df1786f35f8c0b75088e669055b579822a50ccb996ddd41a1f3c03a36c004e8166be191f09c0ec942ea9a1bc1313122ff1a51935fc0a64190f5f6ec7d4fffec99bd67c46da7e73875c3f9968b519a8c16674653923e3e7ff2ce505427a00a45926bbebe4f3a7856a6ff67b6d504f38ddbcd1b9daa1552508fe431ef683ce31abe03c8d08d786e07e9c147b296f9e37551f7d5951e6980f47e729be331c766aeb19b8feab55eee2e1f6f2da3d9f442f14d0cefa699b7d64ccb7aceacc86e60ed68ab0f66201d5998b1286d1f007af294f5825dcb40139cdb0a29b98fdbef224524319f688d44c948e5af5b0335d7f1e0b45528d5",
+    "https://job-logs.eascdn.net/production/3781f33f-c3e0-4aad-8046-3b4eac5d363f/1766330035747-6db5b65c-0f31-41e1-a281-9579828d31a9.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20251221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20251221T151611Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=17f1a06053ada8fd6202a0f74c243215984a2fbf87d48cfe1f57e25ca6b60f8c4e3f1d0967fd3f84091f4263a22995554e83bdd87dfd5f455cf78b939828c3e20b21ceb9079cb39b8543ac3b3c3b861b3c3c6ee51982105a36aae3bf6bd990e8639f4298424b1c5a70d3cbb6314a5153bbc2149d44893ea95ab24eea77abab9e336ff6f4c7e9f4bf79b596fe1d61aba8bff90f9df067561f89592b850cd12e3db8bda59b1f21be14c02bd392066ee2929f736c33fdf57a41568ae6736887fe3134c7977507693b2280cb44773de2d88b3bb6689a4e7f1441be6a6962022aa91bff061a89bbf307d95bf4ac94bacac02cd4cd9363fa3673bd78d0fa6d4d29dbac"
+  ],
+  "project": {
+    "id": "ec1dfa50-a8be-4a82-a7b0-b344e5a67aa4",
+    "name": "mytenant",
+    "slug": "mytenant",
+    "ownerAccount": {
+      "id": "a8d6981c-b885-43b5-b5f3-8fe10299fc09",
+      "name": "ugeraci97"
+    }
+  },
+  "distribution": "STORE",
+  "buildProfile": "production",
+  "sdkVersion": "54.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "0bc703ce51e7cdcdda4af03396aa4f1ffad00b9c",
+  "gitCommitMessage": "Add missing iOS notification sound asset",
+  "priority": "NORMAL",
+  "createdAt": "2025-12-21T15:13:51.538Z",
+  "updatedAt": "2025-12-21T15:15:19.625Z",
+  "completedAt": "2025-12-21T15:15:08.630Z",
+  "expirationDate": "2026-01-20T15:13:51.634Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 219,
+    "buildQueueTime": 47871,
+    "buildDuration": 24865
+  }
+}

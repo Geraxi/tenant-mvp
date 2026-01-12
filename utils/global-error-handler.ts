@@ -147,7 +147,6 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
     console.log('[GlobalErrorHandler] Global error listeners initialized.');
   }
 } else {
-  if (__DEV__) {
-    console.log(`[GlobalErrorHandler] Not initializing web error listeners. Platform: ${Platform.OS}, window: ${typeof window}`);
-  }
+  // On native platforms (iOS/Android), web error listeners are not needed
+  // This is expected behavior, so we don't log it to avoid noise
 }

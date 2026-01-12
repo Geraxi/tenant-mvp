@@ -50,6 +50,8 @@ export const users = pgTable("users", {
   verificationStatus: text("verification_status").default("pending"), // 'pending', 'approved', 'rejected'
   verificationReviewedAt: timestamp("verification_reviewed_at"),
   verificationNotes: text("verification_notes"),
+  // Onboarding state
+  onboardingState: jsonb("onboarding_state"), // OnboardingState type
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -209,6 +211,21 @@ export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions
 });
 
 // Types
+export type UserRole = "TENANT" | "LANDLORD";
+
+export type TenantVerificationStatus =
+  | "not_started"
+  | "skipped"
+  | "completed";
+
+export type OnboardingState = {
+  userRole?: UserRole;
+  onboardingCompleted_TENANT?: boolean;
+  onboardingCompleted_LANDLORD?: boolean;
+  verificationStatus_TENANT?: TenantVerificationStatus;
+  landlordCriteriaSaved?: boolean;
+};
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;

@@ -1,0 +1,44 @@
+{
+  "project": {
+    "name": "Tenant",
+    "description": "Rental marketplace app connecting tenants and landlords",
+    "bundleId": "com.mytenant.tenantapp",
+    "version": "1.0.0"
+  },
+  "build": {
+    "platform": ["ios"],
+    "autoIncrement": true,
+    "distribution": "store"
+  },
+  "appStore": {
+    "autoSubmit": true,
+    "submitProfile": "production",
+    "ascAppId": "${ASC_APP_ID}",
+    "appleTeamId": "${APPLE_TEAM_ID}"
+  },
+  "features": {
+    "camera": true,
+    "photoLibrary": true,
+    "faceID": true,
+    "pushNotifications": true,
+    "inAppPurchases": true
+  },
+  "permissions": {
+    "camera": "Questa app richiede l'accesso alla fotocamera per scansionare documenti e caricare foto profilo.",
+    "photoLibrary": "La libreria foto è necessaria per caricare immagini dell'immobile.",
+    "photoLibraryAdd": "L'app ha bisogno di salvare le foto che carichi nel tuo profilo.",
+    "faceID": "Face ID viene utilizzato per l'accesso sicuro.",
+    "microphone": "Allow $(PRODUCT_NAME) to access your microphone"
+  },
+  "localization": {
+    "primary": "it",
+    "supported": ["it", "en"]
+  },
+  "encryption": {
+    "usesNonExemptEncryption": false
+  }
+}
+
+
+
+
