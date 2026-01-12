@@ -4,7 +4,7 @@
 
 Your current `DATABASE_URL` has an incorrect hostname:
 ```
-postgresql://postgres.iohszsmnkbxpauqqdudy:tenantmvp2026@aws-0.us-east-1.pooler.supabase.com:6543/postgres
+postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0.us-east-1.pooler.supabase.com:6543/postgres
 ```
 
 The hostname `aws-0.us-east-1.pooler.supabase.com` cannot be resolved, causing connection errors.
@@ -13,7 +13,7 @@ The hostname `aws-0.us-east-1.pooler.supabase.com` cannot be resolved, causing c
 
 ### Option 1: From Supabase Dashboard (Recommended)
 
-1. Go to your Supabase project: https://supabase.com/dashboard/project/iohszsmnkbxpauqqdudy
+1. Go to your Supabase project: https://supabase.com/dashboard/project/your-project-ref
 2. Navigate to **Settings** → **Database**
 3. Scroll down to **Connection string**
 4. Select **Connection pooling** (for production) or **Direct connection** (for development)
@@ -22,12 +22,12 @@ The hostname `aws-0.us-east-1.pooler.supabase.com` cannot be resolved, causing c
 
 **Connection Pooling (Recommended for production):**
 ```
-postgresql://postgres.iohszsmnkbxpauqqdudy:[YOUR-PASSWORD]@aws-0.[REGION].pooler.supabase.com:6543/postgres
+postgresql://postgres.your-project-ref:[YOUR-PASSWORD]@aws-0.[REGION].pooler.supabase.com:6543/postgres
 ```
 
 **Direct Connection:**
 ```
-postgresql://postgres.iohszsmnkbxpauqqdudy:[YOUR-PASSWORD]@aws-0.[REGION].supabase.com:5432/postgres
+postgresql://postgres.your-project-ref:[YOUR-PASSWORD]@aws-0.[REGION].supabase.com:5432/postgres
 ```
 
 ### Option 2: Check Your Supabase Project Region
@@ -46,7 +46,7 @@ To find your region:
 
 If connection pooling doesn't work, try transaction mode:
 ```
-postgresql://postgres.iohszsmnkbxpauqqdudy:[YOUR-PASSWORD]@aws-0.[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true
+postgresql://postgres.your-project-ref:[YOUR-PASSWORD]@aws-0.[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 ## Update Your .env File
@@ -56,10 +56,10 @@ Once you have the correct connection string:
 1. Open your `.env` file
 2. Update the `DATABASE_URL` line:
    ```
-   DATABASE_URL=postgresql://postgres.iohszsmnkbxpauqqdudy:tenantmvp2026@[CORRECT-HOSTNAME]:6543/postgres
+   DATABASE_URL=postgresql://postgres.your-project-ref:YOUR_PASSWORD@[CORRECT-HOSTNAME]:6543/postgres
    ```
 3. Replace `[CORRECT-HOSTNAME]` with the actual hostname from Supabase dashboard
-4. Make sure the password `tenantmvp2026` is correct
+4. Make sure the password `YOUR_PASSWORD` is correct
 5. Restart your server
 
 ## Verify the Connection

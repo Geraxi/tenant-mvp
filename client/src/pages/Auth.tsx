@@ -738,18 +738,18 @@ export default function Auth() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setMode("login")}
-            className="w-full bg-orange-500 text-white font-bold text-lg py-4 px-6 rounded-2xl hover:bg-orange-600 transition-colors"
+            className="w-full bg-white text-blue-600 font-bold text-lg py-4 px-6 rounded-2xl hover:bg-gray-100 transition-colors"
           >
-            {language === "it" ? "Accedi al tuo account" : "Sign in to your account"}
+            {texts.signIn}
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setMode("signup")}
-            className="w-full bg-orange-500 text-white font-bold text-lg py-4 px-6 rounded-2xl hover:bg-orange-600 transition-colors"
+            className="w-full bg-blue-700 text-white font-bold text-lg py-4 px-6 rounded-2xl hover:bg-blue-800 transition-colors border-2 border-white/20"
           >
-            {language === "it" ? "Crea un nuovo account" : "Create a new account"}
+            {texts.signUp}
           </motion.button>
         </div>
       </motion.div>

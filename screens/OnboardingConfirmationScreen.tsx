@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Utente } from '../src/types';
-import { premiumTheme } from '../styles/premiumTheme';
 
 interface OnboardingConfirmationScreenProps {
   user: Utente;
@@ -179,7 +178,7 @@ export default function OnboardingConfirmationScreen({
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <MaterialIcons name="check-circle" size={60} color="#1B998B" />
+          <MaterialIcons name="check-circle" size={60} color="#4CAF50" />
           <Text style={styles.title}>Quasi Fatto!</Text>
           <Text style={styles.subtitle}>
             Controlla le tue informazioni prima di completare la configurazione
@@ -191,7 +190,7 @@ export default function OnboardingConfirmationScreen({
         {renderIDVerificationSummary()}
 
         <View style={styles.infoBox}>
-          <MaterialIcons name="info" size={20} color={premiumTheme.colors.accent} />
+          <MaterialIcons name="info" size={20} color="#2196F3" />
           <Text style={styles.infoText}>
             Puoi modificare queste informazioni in qualsiasi momento dalle impostazioni del profilo.
           </Text>
@@ -200,7 +199,7 @@ export default function OnboardingConfirmationScreen({
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={20} color={premiumTheme.colors.inkMuted} />
+          <MaterialIcons name="arrow-back" size={20} color="#666" />
           <Text style={styles.backButtonText}>Indietro</Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -225,7 +224,7 @@ export default function OnboardingConfirmationScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumTheme.colors.background,
+    backgroundColor: '#F5F5F5',
   },
   content: {
     padding: 20,
@@ -236,47 +235,45 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: premiumTheme.colors.ink,
+    fontWeight: 'bold',
+    color: '#333',
     marginTop: 15,
     marginBottom: 10,
-    fontFamily: premiumTheme.typography.display,
   },
   subtitle: {
     fontSize: 16,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     textAlign: 'center',
     lineHeight: 22,
-    fontFamily: premiumTheme.typography.body,
   },
   summarySection: {
-    backgroundColor: premiumTheme.colors.surface,
-    borderRadius: premiumTheme.radii.card,
+    backgroundColor: 'white',
+    borderRadius: 12,
     padding: 20,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
-    ...premiumTheme.shadows.card,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   summaryTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 15,
-    fontFamily: premiumTheme.typography.display,
   },
   summaryContent: {
     gap: 8,
   },
   summaryText: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     lineHeight: 20,
-    fontFamily: premiumTheme.typography.body,
   },
   summaryLabel: {
     fontWeight: '600',
-    color: premiumTheme.colors.ink,
+    color: '#333',
   },
   profileRow: {
     flexDirection: 'row',
@@ -294,15 +291,13 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
-    fontFamily: premiumTheme.typography.display,
+    fontWeight: 'bold',
+    color: '#333',
   },
   profileEmail: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     marginTop: 2,
-    fontFamily: premiumTheme.typography.body,
   },
   verificationRow: {
     flexDirection: 'row',
@@ -311,14 +306,13 @@ const styles = StyleSheet.create({
   },
   verificationText: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     marginLeft: 10,
-    fontFamily: premiumTheme.typography.body,
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: premiumTheme.colors.sky,
-    borderRadius: premiumTheme.radii.input,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
     padding: 15,
     marginBottom: 20,
     gap: 10,
@@ -326,9 +320,8 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: premiumTheme.colors.navy,
+    color: '#1976D2',
     lineHeight: 20,
-    fontFamily: premiumTheme.typography.body,
   },
   footer: {
     flexDirection: 'row',
@@ -341,16 +334,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    borderRadius: premiumTheme.radii.button,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
+    borderColor: '#E0E0E0',
     gap: 8,
-    backgroundColor: premiumTheme.colors.surface,
+    backgroundColor: 'white',
   },
   backButtonText: {
     fontSize: 16,
-    color: premiumTheme.colors.inkMuted,
-    fontFamily: premiumTheme.typography.body,
+    color: '#666',
   },
   completeButton: {
     flex: 2,
@@ -358,21 +350,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    backgroundColor: '#1B998B',
-    borderRadius: premiumTheme.radii.button,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
     gap: 8,
-    ...premiumTheme.shadows.lift,
   },
   completeButtonDisabled: {
-    backgroundColor: '#7CC9B8',
+    backgroundColor: '#A5D6A7',
   },
   completeButtonText: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
-    fontFamily: premiumTheme.typography.body,
   },
 });
-
 
 

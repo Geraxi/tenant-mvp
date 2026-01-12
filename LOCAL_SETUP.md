@@ -27,7 +27,7 @@ Your Supabase service role key (for admin operations like user creation).
 4. Copy the key
 
 ### 3. SUPABASE_URL (optional, already set)
-Already configured in `.replit` file: `https://iohszsmnkbxpauqqdudy.supabase.co`
+Already configured in `.replit` file: `https://your-project.supabase.co`
 
 ### 4. SUPABASE_ANON_KEY (optional, already set)
 Already configured in `.replit` file
@@ -51,7 +51,7 @@ Create a `.env` file in the project root:
 ```bash
 DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-SUPABASE_URL=https://iohszsmnkbxpauqqdudy.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1
 ```
 

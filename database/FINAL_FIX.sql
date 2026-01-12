@@ -1,6 +1,6 @@
 -- FINAL FIX - One script to rule them all
 -- Run this ENTIRE script in Supabase SQL Editor
--- Make sure you're in the correct project: https://ysvindlleiicosvdzfsz.supabase.co
+-- Make sure you're in the correct project: https://your-project.supabase.co
 
 -- Step 1: Verify we're in the right place
 SELECT 

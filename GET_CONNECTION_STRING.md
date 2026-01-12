@@ -29,7 +29,7 @@ The connection string is typically displayed in one of these locations:
 
 - **Direct connection** (what you're currently viewing):
   - Port: `5432`
-  - Hostname: `db.iohszsmnkbxpauqqdudy.supabase.co`
+  - Hostname: `db.your-project-ref.supabase.co`
   - Not suitable for server applications with connection pooling
 
 - **Connection pooling** → **Transaction mode** (what you need):
@@ -47,7 +47,7 @@ postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0.[REGION].pooler.supabase.co
 
 **Important:** 
 - Replace `[PASSWORD]` with your actual database password
-- The `[PROJECT-REF]` should be `iohszsmnkbxpauqqdudy` (from your Supabase URL)
+- The `[PROJECT-REF]` should be `your-project-ref` (from your Supabase URL)
 - The `[REGION]` should match your project's region (e.g., `us-east-1`, `eu-west-1`)
 
 ### 5. Update Your .env File
@@ -55,11 +55,11 @@ Once you have the connection string:
 1. Open your `.env` file
 2. Find the line: `DATABASE_URL=...`
 3. Replace it with the connection string you copied
-4. Make sure to replace `[PASSWORD]` with your actual password: `tenantmvp2026`
+4. Make sure to replace `[PASSWORD]` with your actual password: `YOUR_PASSWORD`
 
 Example:
 ```env
-DATABASE_URL=postgresql://postgres.iohszsmnkbxpauqqdudy:tenantmvp2026@aws-0.us-east-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0.us-east-1.pooler.supabase.com:6543/postgres
 ```
 
 ### 6. Verify the Connection
@@ -93,14 +93,14 @@ Check the server logs for any connection errors. If successful, you should see t
 
 ## Quick Reference
 
-**Your Project Reference:** `iohszsmnkbxpauqqdudy`  
-**Your Password:** `tenantmvp2026` (unless you've reset it)  
+**Your Project Reference:** `your-project-ref`  
+**Your Password:** `YOUR_PASSWORD` (unless you've reset it)  
 **Connection Pooling Port:** `6543`  
 **Direct Connection Port:** `5432`
 
 The connection string format:
 ```
-postgresql://postgres.iohszsmnkbxpauqqdudy:tenantmvp2026@aws-0.[YOUR-REGION].pooler.supabase.com:6543/postgres
+postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0.[YOUR-REGION].pooler.supabase.com:6543/postgres
 ```
 
 Replace `[YOUR-REGION]` with your actual region from the Supabase dashboard.

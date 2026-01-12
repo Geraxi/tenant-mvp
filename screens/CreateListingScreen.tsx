@@ -17,7 +17,47 @@ import { Property } from '../types';
 import { t } from '../utils/translations';
 import ListingAnalyzerWebView from '../components/ListingAnalyzerWebView';
 import ListingAnalyzer, { PropertyData } from '../utils/listingAnalyzer';
-import { premiumTheme } from '../styles/premiumTheme';
+const premiumTheme = {
+  colors: {
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    surfaceMuted: '#F8F9FA',
+    border: '#E0E0E0',
+    ink: '#333',
+    inkMuted: '#666',
+    accent: '#2196F3',
+    accentSoft: '#E3F2FD',
+    navy: '#667eea',
+  },
+  gradients: {
+    cta: ['#2196F3', '#1976D2'] as [string, string],
+  },
+  radii: {
+    card: 12,
+    input: 12,
+    button: 30,
+  },
+  shadows: {
+    card: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    lift: {
+      shadowColor: '#2196F3',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+  },
+  typography: {
+    body: undefined,
+    display: undefined,
+  },
+};
 
 interface CreateListingScreenProps {
   onBack: () => void;

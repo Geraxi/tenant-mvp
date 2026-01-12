@@ -24,7 +24,7 @@ Then create `.env` file in the project root:
 ```bash
 DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-SUPABASE_URL=https://iohszsmnkbxpauqqdudy.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1
 PORT=5000
 NODE_ENV=development

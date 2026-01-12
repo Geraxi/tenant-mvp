@@ -278,7 +278,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
         {showLoginForm && (
           <FadeIn delay={200} from="bottom">
             <GradientCard 
-              colors={[premiumTheme.colors.surface, premiumTheme.colors.surfaceMuted]}
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.12)']}
               style={styles.loginForm}
             >
               <FadeIn delay={400}>
@@ -363,7 +363,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
         {showSignupForm && (
           <FadeIn delay={200} from="bottom">
             <GradientCard 
-              colors={[premiumTheme.colors.surface, premiumTheme.colors.surfaceMuted]}
+              colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.12)']}
               style={styles.loginForm}
             >
               <FadeIn delay={400}>

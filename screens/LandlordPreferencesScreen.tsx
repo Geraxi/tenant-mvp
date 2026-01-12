@@ -10,7 +10,49 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import RangeSlider from '../components/RangeSlider';
 import { LinearGradient } from 'expo-linear-gradient';
-import { premiumTheme } from '../styles/premiumTheme';
+
+const premiumTheme = {
+  colors: {
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    surfaceMuted: '#F8F9FA',
+    border: '#E0E0E0',
+    ink: '#333333',
+    inkMuted: '#666666',
+    accent: '#2196F3',
+    accentSoft: '#E3F2FD',
+    navy: '#667eea',
+  },
+  gradients: {
+    cta: ['#2196F3', '#1976D2'],
+  },
+  radii: {
+    card: 12,
+    input: 12,
+    pill: 20,
+    button: 30,
+  },
+  shadows: {
+    card: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    lift: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+  },
+  typography: {
+    body: undefined,
+    display: undefined,
+  },
+};
 
 interface LandlordPreferencesScreenProps {
   onComplete: (preferences: any) => void;

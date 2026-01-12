@@ -53,7 +53,7 @@ cat > .env << EOF
 DATABASE_URL=$db_url
 
 # Supabase
-SUPABASE_URL=https://iohszsmnkbxpauqqdudy.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1
 SUPABASE_SERVICE_ROLE_KEY=$service_key
 

@@ -14,7 +14,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Utente } from '../src/types';
 import { LinearGradient } from 'expo-linear-gradient';
-import { premiumTheme } from '../styles/premiumTheme';
 
 interface PersonalDetailsScreenProps {
   user: Utente;
@@ -117,23 +116,23 @@ export default function PersonalDetailsScreen({ user, onComplete, onBack }: Pers
             <Image source={{ uri: personalDetails.foto }} style={styles.profilePhoto} />
           ) : (
             <View style={styles.photoPlaceholder}>
-              <MaterialIcons name="person" size={60} color={premiumTheme.colors.inkMuted} />
+              <MaterialIcons name="person" size={60} color="#999" />
             </View>
           )}
           
           {uploading && (
             <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color={premiumTheme.colors.accent} />
+              <ActivityIndicator size="large" color="#2196F3" />
             </View>
           )}
           
           <View style={styles.photoActions}>
             <TouchableOpacity style={styles.photoAction} onPress={handleImagePicker}>
-              <MaterialIcons name="photo-library" size={20} color={premiumTheme.colors.accent} />
+              <MaterialIcons name="photo-library" size={20} color="#2196F3" />
               <Text style={styles.photoActionText}>Galleria</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoAction} onPress={handleCamera}>
-              <MaterialIcons name="camera-alt" size={20} color={premiumTheme.colors.accent} />
+              <MaterialIcons name="camera-alt" size={20} color="#2196F3" />
               <Text style={styles.photoActionText}>Fotocamera</Text>
             </TouchableOpacity>
           </View>
@@ -242,13 +241,11 @@ export default function PersonalDetailsScreen({ user, onComplete, onBack }: Pers
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={20} color={premiumTheme.colors.inkMuted} />
+          <MaterialIcons name="arrow-back" size={20} color="#666" />
           <Text style={styles.backButtonText}>Indietro</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
-          <LinearGradient colors={premiumTheme.gradients.cta} style={styles.continueButtonGradient}>
-            <Text style={styles.continueButtonText}>Continua</Text>
-          </LinearGradient>
+          <Text style={styles.continueButtonText}>Continua</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -258,18 +255,17 @@ export default function PersonalDetailsScreen({ user, onComplete, onBack }: Pers
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumTheme.colors.background,
+    backgroundColor: '#F5F5F5',
   },
   content: {
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 15,
     marginTop: 20,
-    fontFamily: premiumTheme.typography.display,
   },
   photoContainer: {
     alignItems: 'center',
@@ -280,19 +276,15 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 15,
-    borderWidth: 2,
-    borderColor: premiumTheme.colors.border,
   },
   photoPlaceholder: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: premiumTheme.colors.surfaceMuted,
+    backgroundColor: '#E0E0E0',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 15,
-    borderWidth: 2,
-    borderColor: premiumTheme.colors.border,
   },
   uploadingOverlay: {
     position: 'absolute',
@@ -315,9 +307,8 @@ const styles = StyleSheet.create({
   },
   photoActionText: {
     fontSize: 14,
-    color: premiumTheme.colors.accent,
+    color: '#2196F3',
     marginTop: 5,
-    fontFamily: premiumTheme.typography.body,
   },
   inputGroup: {
     marginBottom: 20,
@@ -325,20 +316,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: premiumTheme.colors.ink,
+    color: '#333',
     marginBottom: 8,
-    fontFamily: premiumTheme.typography.body,
   },
   textInput: {
-    backgroundColor: premiumTheme.colors.surface,
-    borderRadius: premiumTheme.radii.input,
+    backgroundColor: 'white',
+    borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
-    color: premiumTheme.colors.ink,
+    color: '#333',
     borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
-    fontFamily: premiumTheme.typography.body,
+    borderColor: '#E0E0E0',
   },
   textArea: {
     height: 100,
@@ -357,35 +346,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
-    borderRadius: premiumTheme.radii.button,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
+    borderColor: '#E0E0E0',
     gap: 8,
-    backgroundColor: premiumTheme.colors.surface,
   },
   backButtonText: {
     fontSize: 16,
-    color: premiumTheme.colors.inkMuted,
-    fontFamily: premiumTheme.typography.body,
+    color: '#666',
   },
   continueButton: {
     flex: 2,
-    borderRadius: premiumTheme.radii.button,
-    overflow: 'hidden',
-    ...premiumTheme.shadows.lift,
-  },
-  continueButtonGradient: {
     paddingVertical: 15,
+    backgroundColor: '#2196F3',
     alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 8,
   },
   continueButtonText: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
-    fontFamily: premiumTheme.typography.body,
   },
 });
-
-
 

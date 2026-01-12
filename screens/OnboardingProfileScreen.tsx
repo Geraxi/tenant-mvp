@@ -14,7 +14,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Utente } from '../src/types';
-import { premiumTheme } from '../styles/premiumTheme';
 
 interface OnboardingProfileScreenProps {
   user: Utente;
@@ -86,7 +85,7 @@ export default function OnboardingProfileScreen({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={22} color={premiumTheme.colors.ink} />
+          <MaterialIcons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Crea il tuo profilo</Text>
         <View style={styles.placeholder} />
@@ -107,7 +106,7 @@ export default function OnboardingProfileScreen({
               <Image source={{ uri: foto }} style={styles.photo} />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <MaterialIcons name="camera-alt" size={24} color={premiumTheme.colors.accent} />
+                <MaterialIcons name="camera-alt" size={24} color="#2196F3" />
               </View>
             )}
             <View style={styles.photoAddButton}>
@@ -189,7 +188,7 @@ export default function OnboardingProfileScreen({
               <Switch
                 value={cercaCoinquilino}
                 onValueChange={setCercaCoinquilino}
-                trackColor={{ false: premiumTheme.colors.border, true: premiumTheme.colors.accent }}
+                trackColor={{ false: '#E0E0E0', true: '#2196F3' }}
                 thumbColor={cercaCoinquilino ? '#FFFFFF' : '#F4F3F4'}
               />
             </View>
@@ -199,7 +198,7 @@ export default function OnboardingProfileScreen({
         {/* Continue Button */}
         <TouchableOpacity style={styles.continueButton} onPress={handleNext}>
           <LinearGradient
-            colors={premiumTheme.gradients.cta}
+            colors={['#2196F3', '#1976D2']}
             style={styles.buttonGradient}
           >
             <Text style={styles.buttonText}>Prosegui</Text>
@@ -213,7 +212,7 @@ export default function OnboardingProfileScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumTheme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -221,27 +220,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: premiumTheme.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
-    fontFamily: premiumTheme.typography.display,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
   placeholder: {
     width: 32,
   },
   stepIndicator: {
     fontSize: 12,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     textAlign: 'center',
     paddingVertical: 8,
-    backgroundColor: premiumTheme.colors.surfaceMuted,
-    fontFamily: premiumTheme.typography.body,
+    backgroundColor: '#F8F9FA',
   },
   content: {
     flex: 1,
@@ -249,17 +247,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
     marginBottom: 4,
-    fontFamily: premiumTheme.typography.display,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     marginBottom: 16,
     lineHeight: 18,
-    fontFamily: premiumTheme.typography.body,
   },
   photoSection: {
     alignItems: 'center',
@@ -274,15 +270,15 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     borderWidth: 2,
-    borderColor: premiumTheme.colors.border,
+    borderColor: '#E0E0E0',
   },
   photoPlaceholder: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: premiumTheme.colors.surface,
+    backgroundColor: '#F5F5F5',
     borderWidth: 2,
-    borderColor: premiumTheme.colors.border,
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -294,7 +290,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: premiumTheme.colors.accent,
+    backgroundColor: '#2196F3',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -302,8 +298,7 @@ const styles = StyleSheet.create({
   },
   photoHint: {
     fontSize: 11,
-    color: premiumTheme.colors.inkMuted,
-    fontFamily: premiumTheme.typography.body,
+    color: '#999',
   },
   formSection: {
     marginBottom: 12,
@@ -317,20 +312,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: premiumTheme.colors.ink,
+    color: '#1A1A1A',
     marginBottom: 6,
-    fontFamily: premiumTheme.typography.body,
   },
   input: {
-    backgroundColor: premiumTheme.colors.surface,
-    borderRadius: premiumTheme.radii.input,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: premiumTheme.colors.ink,
+    color: '#1A1A1A',
     borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
-    fontFamily: premiumTheme.typography.body,
+    borderColor: '#E0E0E0',
   },
   textArea: {
     height: 60,
@@ -347,15 +340,13 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 14,
-    color: premiumTheme.colors.ink,
+    color: '#1A1A1A',
     flex: 1,
-    fontFamily: premiumTheme.typography.body,
   },
   continueButton: {
-    borderRadius: premiumTheme.radii.button,
+    borderRadius: 12,
     overflow: 'hidden',
     marginTop: 12,
-    ...premiumTheme.shadows.lift,
   },
   buttonGradient: {
     paddingVertical: 16,
@@ -365,7 +356,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    fontFamily: premiumTheme.typography.body,
+    fontWeight: '600',
   },
 });

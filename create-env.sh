@@ -12,7 +12,7 @@ echo ""
 cat > .env << ENVFILE
 DATABASE_URL=$db_url
 SUPABASE_SERVICE_ROLE_KEY=$service_key
-SUPABASE_URL=https://iohszsmnkbxpauqqdudy.supabase.co
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RvrB-op5mh0qwzjaLL2OoQ_wUVI9Rp1
 PORT=5000
 NODE_ENV=development

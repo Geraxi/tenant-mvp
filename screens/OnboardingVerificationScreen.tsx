@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { premiumTheme } from '../styles/premiumTheme';
 
 interface OnboardingVerificationScreenProps {
   onNext: () => void;
@@ -31,7 +30,7 @@ export default function OnboardingVerificationScreen({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={22} color={premiumTheme.colors.ink} />
+          <MaterialIcons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Verifica Profilo</Text>
         <TouchableOpacity onPress={onSkip}>
@@ -52,8 +51,8 @@ export default function OnboardingVerificationScreen({
         {/* Benefits */}
         <View style={styles.benefitsContainer}>
           <View style={styles.benefitCard}>
-            <View style={[styles.benefitIcon, { backgroundColor: premiumTheme.colors.sky }]}>
-              <MaterialIcons name="security" size={28} color={premiumTheme.colors.navy} />
+            <View style={[styles.benefitIcon, { backgroundColor: '#E3F2FD' }]}>
+              <MaterialIcons name="security" size={32} color="#2196F3" />
             </View>
             <Text style={styles.benefitTitle}>Maggiore Sicurezza</Text>
             <Text style={styles.benefitText}>
@@ -62,8 +61,8 @@ export default function OnboardingVerificationScreen({
           </View>
 
           <View style={styles.benefitCard}>
-            <View style={[styles.benefitIcon, { backgroundColor: premiumTheme.colors.mint }]}>
-              <MaterialIcons name="verified-user" size={28} color="#1B998B" />
+            <View style={[styles.benefitIcon, { backgroundColor: '#E8F5E9' }]}>
+              <MaterialIcons name="verified-user" size={32} color="#4CAF50" />
             </View>
             <Text style={styles.benefitTitle}>Affidabilità Garantita</Text>
             <Text style={styles.benefitText}>
@@ -72,8 +71,8 @@ export default function OnboardingVerificationScreen({
           </View>
 
           <View style={styles.benefitCard}>
-            <View style={[styles.benefitIcon, { backgroundColor: premiumTheme.colors.accentSoft }]}>
-              <MaterialIcons name="favorite" size={28} color={premiumTheme.colors.accentDark} />
+            <View style={[styles.benefitIcon, { backgroundColor: '#FFF3E0' }]}>
+              <MaterialIcons name="favorite" size={32} color="#FF9800" />
             </View>
             <Text style={styles.benefitTitle}>Match Migliori</Text>
             <Text style={styles.benefitText}>
@@ -111,7 +110,7 @@ export default function OnboardingVerificationScreen({
 
         {/* Privacy Note */}
         <View style={styles.privacyNote}>
-          <MaterialIcons name="lock" size={20} color="#1B998B" />
+          <MaterialIcons name="lock" size={20} color="#4CAF50" />
           <Text style={styles.privacyText}>
             I tuoi dati sono crittografati e protetti.
           </Text>
@@ -120,7 +119,7 @@ export default function OnboardingVerificationScreen({
         {/* CTA Button */}
         <TouchableOpacity style={styles.verifyButton} onPress={onNext}>
           <LinearGradient
-            colors={premiumTheme.gradients.cta}
+            colors={['#2196F3', '#1976D2']}
             style={styles.buttonGradient}
           >
             <Text style={styles.buttonText}>Inizia la Verifica</Text>
@@ -138,7 +137,7 @@ export default function OnboardingVerificationScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumTheme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -146,22 +145,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: premiumTheme.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: premiumTheme.colors.ink,
-    fontFamily: premiumTheme.typography.display,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
   skipText: {
     fontSize: 14,
-    color: premiumTheme.colors.accent,
-    fontWeight: '600',
-    fontFamily: premiumTheme.typography.body,
+    color: '#2196F3',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
@@ -171,33 +169,28 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '800',
-    color: premiumTheme.colors.ink,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
     marginBottom: 12,
     textAlign: 'center',
-    fontFamily: premiumTheme.typography.display,
   },
   subtitle: {
     fontSize: 16,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
-    fontFamily: premiumTheme.typography.body,
   },
   benefitsContainer: {
     gap: 16,
     marginBottom: 32,
   },
   benefitCard: {
-    backgroundColor: premiumTheme.colors.surface,
-    borderRadius: premiumTheme.radii.card,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    borderWidth: 1,
-    borderColor: premiumTheme.colors.border,
-    ...premiumTheme.shadows.card,
   },
   benefitIcon: {
     width: 56,
@@ -210,17 +203,15 @@ const styles = StyleSheet.create({
   benefitTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: premiumTheme.colors.ink,
+    color: '#1A1A1A',
     marginBottom: 4,
     flex: 1,
-    fontFamily: premiumTheme.typography.display,
   },
   benefitText: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     lineHeight: 20,
     flex: 1,
-    fontFamily: premiumTheme.typography.body,
   },
   stepsContainer: {
     marginBottom: 24,
@@ -234,7 +225,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: premiumTheme.colors.accent,
+    backgroundColor: '#2196F3',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -243,7 +234,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    fontFamily: premiumTheme.typography.display,
   },
   stepContent: {
     flex: 1,
@@ -251,15 +241,13 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: premiumTheme.colors.ink,
+    color: '#1A1A1A',
     marginBottom: 4,
-    fontFamily: premiumTheme.typography.display,
   },
   stepText: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
+    color: '#666',
     lineHeight: 20,
-    fontFamily: premiumTheme.typography.body,
   },
   privacyNote: {
     flexDirection: 'row',
@@ -270,16 +258,14 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 14,
-    color: '#1B998B',
+    color: '#4CAF50',
     marginLeft: 8,
     fontWeight: '500',
-    fontFamily: premiumTheme.typography.body,
   },
   verifyButton: {
-    borderRadius: premiumTheme.radii.button,
+    borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
-    ...premiumTheme.shadows.lift,
   },
   buttonGradient: {
     paddingVertical: 16,
@@ -289,8 +275,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    fontFamily: premiumTheme.typography.body,
+    fontWeight: '600',
   },
   skipLink: {
     alignItems: 'center',
@@ -298,7 +283,6 @@ const styles = StyleSheet.create({
   },
   skipLinkText: {
     fontSize: 14,
-    color: premiumTheme.colors.inkMuted,
-    fontFamily: premiumTheme.typography.body,
+    color: '#666',
   },
 });
