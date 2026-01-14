@@ -1,4 +1,4 @@
-import { supabase } from './src/supabaseClient';
+import { supabase } from '../client/supabase';
 
 export interface WalletData {
   goal_amount: number;

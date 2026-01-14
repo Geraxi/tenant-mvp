@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import logo from "@assets/logo-removebg-preview_1765398497308.png";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../../supabase";
 import { Mail, Lock, User, ArrowLeft, Globe } from "lucide-react";
 
 type AuthMode = "welcome" | "login" | "signup";

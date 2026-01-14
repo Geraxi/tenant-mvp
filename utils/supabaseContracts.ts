@@ -1,4 +1,4 @@
-import { supabase } from './src/supabaseClient';
+import { supabase } from '../client/supabase';
 import { uploadDocument, getFileUrl } from './supabaseUpload';
 
 export interface ContractData {

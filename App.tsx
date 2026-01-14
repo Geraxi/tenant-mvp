@@ -14,6 +14,7 @@ import { ClerkProvider, useAuth as useClerkAuth } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
 import createTokenCache from './lib/tokenCache';
 import { useSupabaseAuth } from './src/hooks/useSupabaseAuth';
+import { getPendingUser, isEmailVerified, PendingUser } from './utils/userStorage';
 import { Utente, Immobile } from './src/types';
 import { logger } from './src/utils/logger';
 
@@ -27,6 +28,7 @@ import { StripeProvider } from './stripe-provider';
 // Import screens
 import LoginScreen from './screens/LoginScreen';
 import SignInScreen from './screens/SignInScreen';
+import EmailVerificationScreen from './screens/EmailVerificationScreen';
 // Old onboarding removed - using new flow
 import RoleSwitchOnboardingScreen from './screens/RoleSwitchOnboardingScreen';
 import PropertySwipeScreen from './screens/PropertySwipeScreen';
@@ -53,9 +55,11 @@ import TenantOnboardingFlowScreen from './screens/TenantOnboardingFlowScreen';
 import GestioneImmobiliScreen from './screens/GestioneImmobiliScreen';
 import CreateListingScreen from './screens/CreateListingScreen';
 import PropertyDetailsScreen from './screens/PropertyDetailsScreen';
+import ListingPublishedScreen from './screens/ListingPublishedScreen';
 
 type Screen = 
   | 'login'
+  | 'emailVerification'
   | 'onboarding'
   | 'homeownerOnboarding'
   | 'discover'
@@ -70,7 +74,8 @@ type Screen =
   | 'filters'
   | 'properties'
   | 'addProperty'
-  | 'propertyDetails';
+  | 'propertyDetails'
+  | 'listingPublished';
 
 type NavScreen = 'discover' | 'properties' | 'matches' | 'messages' | 'profilo';
 
@@ -86,6 +91,7 @@ function AppContent() {
     completeOnboarding,
     reloadUserFromStorage,
     updateProfile,
+    finalizePendingSignup,
   } = useSupabaseAuth();
   // Also check Clerk auth state
   const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded, userId: clerkUserId } = useClerkAuth();
@@ -96,6 +102,8 @@ function AppContent() {
   }, [isClerkSignedIn, isClerkLoaded, clerkUserId]);
   // #endregion
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
+  const [pendingUser, setPendingUser] = useState<PendingUser | null>(null);
+  const [pendingEmailVerified, setPendingEmailVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -116,6 +124,21 @@ function AppContent() {
   const [showHomeownerOnboarding, setShowHomeownerOnboarding] = useState(false);
   const [forceNavbar, setForceNavbar] = useState(false);
   const [roleSwitchTarget, setRoleSwitchTarget] = useState<'tenant' | 'landlord' | null>(null);
+
+  const refreshPendingRegistration = async () => {
+    const pending = await getPendingUser();
+    setPendingUser(pending);
+    if (pending?.email) {
+      const verified = await isEmailVerified(pending.email);
+      setPendingEmailVerified(verified);
+    } else {
+      setPendingEmailVerified(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshPendingRegistration();
+  }, []);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRoleSwitching, setIsRoleSwitching] = useState(false);
   const [appRefreshKey, setAppRefreshKey] = useState(0);
@@ -282,7 +305,8 @@ function AppContent() {
     try {
       const result = await signUp(email, password, nome, ruolo);
       if (result.success) {
-        setCurrentScreen('onboarding');
+        await refreshPendingRegistration();
+        setCurrentScreen('emailVerification');
       } else {
         Alert.alert('Errore', result.error || 'Errore durante la registrazione');
       }
@@ -447,6 +471,15 @@ function AppContent() {
       setForceNavbar(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user || authLoading) {
+      return;
+    }
+    if (pendingUser) {
+      setCurrentScreen(pendingEmailVerified ? 'onboarding' : 'emailVerification');
+    }
+  }, [user, authLoading, pendingUser, pendingEmailVerified]);
   
   // Force refresh when currentRole changes - DISABLED TO PREVENT INFINITE LOOP
   // useEffect(() => {
@@ -525,7 +558,12 @@ function AppContent() {
                 }
               }, 100);
             }}
-            onSignupSuccess={async () => {
+            onSignupSuccess={async (nextStep) => {
+              if (nextStep === 'verify') {
+                await refreshPendingRegistration();
+                setCurrentScreen('emailVerification');
+                return;
+              }
               console.log('Signup success - will navigate to onboarding when user is available');
               setForceNavbar(true);
               await reloadUserFromStorage();
@@ -539,8 +577,21 @@ function AppContent() {
           />
         );
 
+      case 'emailVerification':
+        return (
+          <EmailVerificationScreen
+            onVerificationComplete={async () => {
+              await refreshPendingRegistration();
+              setCurrentScreen('onboarding');
+            }}
+            onBack={() => {
+              setCurrentScreen('login');
+            }}
+          />
+        );
+
       case 'onboarding':
-        if (!user) {
+        if (!user && !pendingUser) {
           // User not available yet, show loading
           return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
@@ -549,9 +600,10 @@ function AppContent() {
             </View>
           );
         }
+        const onboardingUser = user || (pendingUser as Utente);
         return roleSwitchTarget ? (
           <RoleSwitchOnboardingScreen
-            user={user}
+            user={onboardingUser}
             targetRole={roleSwitchTarget}
             onComplete={async () => {
               try {
@@ -573,55 +625,85 @@ function AppContent() {
         ) : (
           (user?.ruolo === 'landlord' || user?.userType === 'homeowner') ? (
             <LandlordOnboardingFlowScreen
-              user={user}
+              user={onboardingUser}
               onCancel={() => setCurrentScreen('login')}
               onComplete={async (data) => {
                 const details = data?.personalDetails || {};
                 const fullName = [details.nome, details.cognome].filter(Boolean).join(' ').trim();
                 const addressParts = [details.indirizzo, details.cap, details.citta].filter(Boolean).join(', ');
-
-                await updateProfile({
-                  nome: fullName || user.nome,
-                  telefono: details.telefono || user.telefono,
-                  data_nascita: details.dataNascita || user.data_nascita,
-                  indirizzo: addressParts || user.indirizzo,
-                  bio: details.bio || user.bio,
-                  foto: details.foto || user.foto,
+                const profileUpdates: Partial<Utente> = {
+                  nome: fullName || onboardingUser.nome,
+                  telefono: details.telefono || onboardingUser?.telefono,
+                  data_nascita: details.dataNascita || onboardingUser?.data_nascita,
+                  indirizzo: addressParts || onboardingUser?.indirizzo,
+                  bio: details.bio || onboardingUser?.bio,
+                  foto: details.foto || onboardingUser?.foto,
                   ruolo: 'landlord',
                   userType: 'homeowner',
-                });
+                };
 
-                await completeOnboarding('landlord');
+                if (user) {
+                  await updateProfile(profileUpdates);
+                  await completeOnboarding('landlord');
+                } else {
+                  const finalizeResult = await finalizePendingSignup(profileUpdates);
+                  if (!finalizeResult.success) {
+                    Alert.alert('Errore', finalizeResult.error || 'Impossibile completare la registrazione');
+                    return;
+                  }
+                  await completeOnboarding('landlord');
+                }
                 setCurrentScreen('discover');
               }}
             />
           ) : (user?.ruolo === 'tenant' || user?.userType === 'tenant') ? (
             <TenantOnboardingFlowScreen
-              user={user}
+              user={onboardingUser}
               onCancel={() => setCurrentScreen('login')}
               onComplete={async (data) => {
                 const details = data?.profile || {};
-                await updateProfile({
-                  nome: details.nome || user.nome,
-                  bio: details.bio || user.bio,
-                  foto: details.foto || user.foto,
+                const profileUpdates: Partial<Utente> = {
+                  nome: details.nome || onboardingUser?.nome,
+                  bio: details.bio || onboardingUser?.bio,
+                  foto: details.foto || onboardingUser?.foto,
                   ruolo: 'tenant',
                   userType: 'tenant',
-                });
-                await completeOnboarding('tenant');
+                };
+
+                if (user) {
+                  await updateProfile(profileUpdates);
+                  await completeOnboarding('tenant');
+                } else {
+                  const finalizeResult = await finalizePendingSignup(profileUpdates);
+                  if (!finalizeResult.success) {
+                    Alert.alert('Errore', finalizeResult.error || 'Impossibile completare la registrazione');
+                    return;
+                  }
+                  await completeOnboarding('tenant');
+                }
                 setCurrentScreen('discover');
               }}
             />
           ) : (
             <OnboardingFlowScreen
-              user={user}
+              user={onboardingUser}
               onComplete={async (onboardingData) => {
                 const selectedRole = onboardingData?.role === 'landlord' ? 'landlord' : 'tenant';
-                await updateProfile({
+                const profileUpdates: Partial<Utente> = {
                   ruolo: selectedRole,
                   userType: selectedRole === 'landlord' ? 'homeowner' : 'tenant',
-                });
-                await completeOnboarding(selectedRole);
+                };
+                if (user) {
+                  await updateProfile(profileUpdates);
+                  await completeOnboarding(selectedRole);
+                } else {
+                  const finalizeResult = await finalizePendingSignup(profileUpdates);
+                  if (!finalizeResult.success) {
+                    Alert.alert('Errore', finalizeResult.error || 'Impossibile completare la registrazione');
+                    return;
+                  }
+                  await completeOnboarding(selectedRole);
+                }
                 setCurrentScreen('discover');
               }}
             />
@@ -849,9 +931,16 @@ function AppContent() {
           <CreateListingScreen
             onBack={() => setCurrentScreen('properties')}
             onSave={() => {
-              Alert.alert('Annuncio salvato', 'Il tuo annuncio è stato salvato con successo.');
-              setCurrentScreen('properties');
+              setCurrentScreen('listingPublished');
             }}
+          />
+        );
+
+      case 'listingPublished':
+        return (
+          <ListingPublishedScreen
+            onGoToTenantPreferences={() => setCurrentScreen('preferences')}
+            onBack={() => setCurrentScreen('properties')}
           />
         );
 
@@ -927,7 +1016,12 @@ function AppContent() {
                 }
               }, 100);
             }}
-            onSignupSuccess={async () => {
+            onSignupSuccess={async (nextStep) => {
+              if (nextStep === 'verify') {
+                await refreshPendingRegistration();
+                setCurrentScreen('emailVerification');
+                return;
+              }
               console.log('Signup success - will navigate to onboarding when user is available');
               setForceNavbar(true);
               await reloadUserFromStorage();

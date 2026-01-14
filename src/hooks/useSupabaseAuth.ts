@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../utils/src/supabaseClient';
+import { supabase } from '../../client/supabase';
 import { Utente } from '../types';
 import { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  clearEmailVerification,
+  clearPendingUser,
+  getPendingUser,
+  isEmailVerified,
+  savePendingUser,
+} from '../../utils/userStorage';
+import { generateConfirmationToken } from '../../utils/emailService';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 import { logger } from '../utils/logger';
 
@@ -180,33 +189,48 @@ export const useSupabaseAuth = () => {
       if (existingUser) {
         return { success: false, error: 'Utente già registrato. Prova ad accedere.' };
       }
+
+      const pending = await getPendingUser();
+      if (pending?.email === email.trim().toLowerCase()) {
+        return { success: false, error: 'Registrazione in corso. Verifica la tua email.', pending: true };
+      }
       
-      // Create new user (simplified approach)
-      const newUser: Utente = {
+      const confirmationToken = generateConfirmationToken();
+      const pendingUser = {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ruolo,
         nome,
         email: email.trim().toLowerCase(),
         password,
-        verificato: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        confirmationToken,
       };
-      
-      // Save user to local storage
-      await saveRegularUser(newUser);
-      
-      // Persist user session
-      await persistUserData(newUser);
-      
+
+      await savePendingUser(pendingUser);
+      const apiBaseUrl = getApiBaseUrl();
+      const pendingResponse = await fetch(`${apiBaseUrl}/api/auth/pending-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: pendingUser.email,
+          confirmationToken,
+        }),
+      });
+
+      if (!pendingResponse.ok) {
+        const text = await pendingResponse.text();
+        return {
+          success: false,
+          error: text || 'Impossibile avviare la verifica email',
+        };
+      }
+
       // Clear any existing onboarding flags for new users
       await AsyncStorage.removeItem('onboarding_completed');
       await AsyncStorage.removeItem('tenant_onboarding_completed');
       await AsyncStorage.removeItem('landlord_onboarding_completed');
-      
-      logger.debug('New user created and signed in:', newUser);
-      
-      return { success: true, user: newUser };
+
+      logger.debug('Pending signup created:', pendingUser.email);
+      return { success: true, pending: true };
     } catch (error: any) {
       console.error('Signup error:', error);
       return { success: false, error: error.message };
@@ -238,6 +262,11 @@ export const useSupabaseAuth = () => {
       
       logger.debug('Attempting to sign in with:', { email: email.trim().toLowerCase() });
       
+      const pending = await getPendingUser();
+      if (pending?.email === email.trim().toLowerCase()) {
+        return { success: false, error: 'Completa la registrazione prima di accedere.' };
+      }
+
       // First, try to find user in our local storage
       const existingUser = await checkIfUserExists(email.trim().toLowerCase());
       logger.debug('Checking for existing user:', email.trim().toLowerCase());
@@ -638,6 +667,41 @@ export const useSupabaseAuth = () => {
     }
   };
 
+  const finalizePendingSignup = async (overrides?: Partial<Utente>) => {
+    const pending = await getPendingUser();
+    if (!pending) {
+      return { success: false, error: 'Nessuna registrazione in corso' };
+    }
+
+    const verified = await isEmailVerified(pending.email);
+    if (!verified) {
+      return { success: false, error: 'Email non verificata' };
+    }
+
+    const role = overrides?.ruolo || pending.ruolo || 'tenant';
+    const userType = role === 'landlord' ? 'homeowner' : 'tenant';
+
+    const newUser: Utente = {
+      id: pending.id,
+      ruolo: role,
+      userType,
+      nome: overrides?.nome || pending.nome || pending.email.split('@')[0],
+      email: pending.email,
+      password: pending.password,
+      verificato: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...overrides,
+    };
+
+    await saveRegularUser(newUser);
+    await persistUserData(newUser);
+    await clearPendingUser();
+    await clearEmailVerification();
+
+    return { success: true, user: newUser };
+  };
+
   const checkExistingUsers = async () => {
     try {
       logger.debug('Checking existing users...');
@@ -928,5 +992,6 @@ export const useSupabaseAuth = () => {
     checkExistingUsers,
     signInWithApple,
     reloadUserFromStorage,
+    finalizePendingSignup,
   };
 };

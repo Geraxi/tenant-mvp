@@ -1,5 +1,8 @@
-import { supabase } from '../lib/supabase';
-import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Buffer } from 'buffer';
+import { supabase } from '../../client/supabase';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 export interface VerificationDocument {
   id: string;
@@ -19,79 +22,38 @@ export interface VerificationDocument {
 }
 
 export class VerificationService {
+  private static formatSupabaseError(error: any) {
+    if (!error) return 'Unknown error';
+    return [
+      error.message,
+      error.details ? `details: ${error.details}` : null,
+      error.hint ? `hint: ${error.hint}` : null,
+      error.code ? `code: ${error.code}` : null,
+    ]
+      .filter(Boolean)
+      .join(' | ');
+  }
+
   /**
-   * Upload a document image to Supabase Storage
+   * Prepare document image payload for backend upload
    */
-  static async uploadDocumentImage(
-    userId: string,
+  private static async prepareDocumentImage(
     fileUri: string,
-    fileName: string,
-    folder: 'documents' | 'selfies'
-  ): Promise<{ success: boolean; url?: string; error?: string }> {
+    fileName: string
+  ): Promise<{ success: boolean; file?: { base64: string; fileName: string; contentType: string }; error?: string }> {
     try {
-      // Generate unique filename
       const fileExt = fileName.split('.').pop() || 'jpg';
-      const uniqueFileName = `${userId}/${folder}/${Date.now()}.${fileExt}`;
+      const base64Encoding =
+        FileSystem?.EncodingType?.Base64 ? FileSystem.EncodingType.Base64 : 'base64';
+      const base64 = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: base64Encoding as any,
+      });
+      const contentType = this.getContentType(fileExt);
 
-      // For React Native, use FileSystem to read the file
-      if (Platform.OS !== 'web') {
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        
-        // Convert base64 to ArrayBuffer
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-          .from('verification-documents')
-          .upload(uniqueFileName, byteArray, {
-            contentType: 'image/jpeg',
-            upsert: false,
-          });
-
-        if (error) {
-          console.error('Error uploading document:', error);
-          return { success: false, error: error.message };
-        }
-
-        // Get public URL (even for private buckets, we can generate a signed URL)
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('verification-documents').getPublicUrl(uniqueFileName);
-
-        return { success: true, url: publicUrl };
-      } else {
-        // For web, use fetch to get blob
-        const response = await fetch(fileUri);
-        const blob = await response.blob();
-        
-        const { data, error } = await supabase.storage
-          .from('verification-documents')
-          .upload(uniqueFileName, blob, {
-            contentType: blob.type || 'image/jpeg',
-            upsert: false,
-          });
-
-        if (error) {
-          console.error('Error uploading document:', error);
-          return { success: false, error: error.message };
-        }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('verification-documents').getPublicUrl(uniqueFileName);
-
-        return { success: true, url: publicUrl };
-      }
+      return { success: true, file: { base64, fileName, contentType } };
     } catch (error: any) {
-      console.error('Error in uploadDocumentImage:', error);
-      return { success: false, error: error.message || 'Upload failed' };
+      console.error('Error in prepareDocumentImage:', error);
+      return { success: false, error: error.message || 'File read failed' };
     }
   }
 
@@ -108,57 +70,118 @@ export class VerificationService {
     expiryDate?: string
   ): Promise<{ success: boolean; documentId?: string; error?: string }> {
     try {
-      // Upload all images
+      const ownerId = userId;
+
       const [frontResult, backResult, selfieResult] = await Promise.all([
-        this.uploadDocumentImage(userId, documentFrontUri, 'document-front.jpg', 'documents'),
+        this.prepareDocumentImage(documentFrontUri, 'document-front.jpg'),
         documentBackUri
-          ? this.uploadDocumentImage(userId, documentBackUri, 'document-back.jpg', 'documents')
-          : Promise.resolve({ success: true, url: undefined }),
-        this.uploadDocumentImage(userId, selfieUri, 'selfie.jpg', 'selfies'),
+          ? this.prepareDocumentImage(documentBackUri, 'document-back.jpg')
+          : Promise.resolve({ success: true, file: undefined }),
+        this.prepareDocumentImage(selfieUri, 'selfie.jpg'),
       ]);
 
       if (!frontResult.success || !selfieResult.success) {
         return {
           success: false,
-          error: 'Failed to upload documents. Please try again.',
+          error:
+            frontResult.error ||
+            selfieResult.error ||
+            'Failed to read documents. Please try again.',
         };
       }
 
-      // Create verification document record
-      const { data, error } = await supabase
-        .from('verification_documents')
-        .insert({
-          user_id: userId,
-          document_type: documentType,
-          document_front_url: frontResult.url!,
-          document_back_url: backResult.url,
-          selfie_url: selfieResult.url!,
-          document_number: documentNumber,
-          expiry_date: expiryDate,
-          status: 'pending',
-        })
-        .select()
-        .single();
+      const apiBaseUrl = getApiBaseUrl();
+      const prepareResponse = await fetch(`${apiBaseUrl}/api/verification/prepare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: ownerId,
+          documentFront: {
+            fileName: frontResult.file?.fileName,
+            contentType: frontResult.file?.contentType,
+          },
+          documentBack: backResult.file
+            ? {
+                fileName: backResult.file.fileName,
+                contentType: backResult.file.contentType,
+              }
+            : null,
+          selfie: {
+            fileName: selfieResult.file?.fileName,
+            contentType: selfieResult.file?.contentType,
+          },
+        }),
+      });
 
-      if (error) {
-        console.error('Error creating verification document:', error);
-        return { success: false, error: error.message };
+      const prepareText = await prepareResponse.text();
+      let prepareBody: any = null;
+      try {
+        prepareBody = prepareText ? JSON.parse(prepareText) : null;
+      } catch {
+        prepareBody = null;
+      }
+      if (!prepareResponse.ok) {
+        return {
+          success: false,
+          error:
+            prepareBody?.message ||
+            prepareText ||
+            `Verification failed (${prepareResponse.status})`,
+        };
       }
 
-      // Update user's verification status to pending
-      const { error: updateError } = await supabase
-        .from('utenti')
-        .update({
-          verification_pending: true,
-          verification_submitted_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('Error updating user verification status:', updateError);
+      if (!prepareBody?.documentFront?.signedUrl || !prepareBody?.selfie?.signedUrl) {
+        return {
+          success: false,
+          error: prepareBody?.message || 'Missing upload URL from server',
+        };
       }
 
-      return { success: true, documentId: data.id };
+      const uploadResults = await Promise.all([
+        this.uploadToSignedUrl(frontResult.file!, prepareBody.documentFront.signedUrl),
+        prepareBody?.documentBack?.signedUrl && backResult.file
+          ? this.uploadToSignedUrl(backResult.file, prepareBody.documentBack.signedUrl)
+          : Promise.resolve({ success: true }),
+        this.uploadToSignedUrl(selfieResult.file!, prepareBody.selfie.signedUrl),
+      ]);
+
+      const uploadError = uploadResults.find((result) => !result.success);
+      if (uploadError) {
+        return { success: false, error: uploadError.error || 'Upload failed' };
+      }
+
+      const submitResponse = await fetch(`${apiBaseUrl}/api/verification/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: ownerId,
+          documentType,
+          documentFrontPath: prepareBody?.documentFront?.path,
+          documentBackPath: prepareBody?.documentBack?.path,
+          selfiePath: prepareBody?.selfie?.path,
+          documentNumber,
+          expiryDate,
+        }),
+      });
+
+      const submitText = await submitResponse.text();
+      let submitBody: any = null;
+      try {
+        submitBody = submitText ? JSON.parse(submitText) : null;
+      } catch {
+        submitBody = null;
+      }
+      if (!submitResponse.ok) {
+        return {
+          success: false,
+          error:
+            submitBody?.message ||
+            submitText ||
+            `Verification failed (${submitResponse.status})`,
+        };
+      }
+
+      return { success: true, documentId: submitBody?.documentId };
     } catch (error: any) {
       console.error('Error in submitVerification:', error);
       return { success: false, error: error.message || 'Verification submission failed' };
@@ -172,23 +195,36 @@ export class VerificationService {
     userId: string
   ): Promise<VerificationDocument | null> {
     try {
-      const { data, error } = await supabase
-        .from('verification_documents')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/api/verification/status`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No document found
-          return null;
-        }
-        console.error('Error fetching verification status:', error);
-        throw error;
+      if (response.status === 404) {
+        return null;
       }
 
+      if (!response.ok) {
+        const text = await response.text();
+        let body: any = null;
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch {
+          body = null;
+        }
+        throw new Error(
+          body?.message || text || `Failed to fetch verification status (${response.status})`
+        );
+      }
+
+      const text = await response.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
       return data as VerificationDocument;
     } catch (error) {
       console.error('Error in getVerificationStatus:', error);
@@ -218,5 +254,47 @@ export class VerificationService {
       return false;
     }
   }
-}
 
+  private static getContentType(extension: string): string {
+    const types: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+    };
+
+    return types[extension.toLowerCase()] || 'application/octet-stream';
+  }
+
+  private static async uploadToSignedUrl(
+    file: { base64: string; fileName: string; contentType: string },
+    signedUrl: string | undefined
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!signedUrl) {
+      return { success: false, error: 'Missing upload URL' };
+    }
+
+    try {
+      const base64Data = file.base64.includes('base64,')
+        ? file.base64.split('base64,')[1]
+        : file.base64;
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const uploadResponse = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.contentType || 'application/octet-stream' },
+        body: buffer,
+      });
+
+      if (!uploadResponse.ok) {
+        return { success: false, error: `Upload failed (${uploadResponse.status})` };
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Upload failed' };
+    }
+  }
+
+  // getApiBaseUrl moved to src/utils/apiBaseUrl
+}

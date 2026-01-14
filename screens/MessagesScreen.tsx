@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSupabaseAuth } from '../src/hooks/useSupabaseAuth';
 import { MessagingService, Message, Conversation } from '../src/services/messagingService';
-import { supabase } from '../src/lib/supabase';
+import { supabase } from '../client/supabase';
 
 interface MessagesScreenProps {
   onNavigateBack: () => void;

@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import type { Server as HTTPServer } from "http";
 import { setupAuth, isAuthenticated } from "./clerkAuth";
 import { storage } from "./storage";
+import { requireSupabaseAdmin } from "./supabaseAdmin";
 import {
   insertPropertySchema,
   insertRoommateSchema,
@@ -15,6 +16,37 @@ import {
 import { stripeService } from "./stripeService";
 import { getStripePublishableKey } from "./stripeClient";
 import { pushService } from "./pushService";
+import { randomUUID } from "crypto";
+import { clerkClient } from "@clerk/express";
+
+const clerkSecretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+const clerk = clerkSecretKey ? clerkClient : null;
+
+async function resolveUserId(req: Request): Promise<string | null> {
+  if ((req as any).user?.claims?.sub) {
+    return (req as any).user.claims.sub;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ") && clerk) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const jwt = await clerk.verifyToken(token);
+      return jwt.sub || null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (
+    process.env.ALLOW_UNAUTHENTICATED_VERIFICATION_SUBMIT === "true" ||
+    process.env.NODE_ENV !== "production"
+  ) {
+    return (req.body as any)?.userId || null;
+  }
+
+  return null;
+}
 
 export async function registerRoutes(
   server: HTTPServer,
@@ -31,6 +63,144 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/auth/pending-signup", async (req: Request, res: Response) => {
+    try {
+      const { email, confirmationToken } = req.body as any;
+      if (!email || !confirmationToken) {
+        return res.status(400).json({ message: "Email and confirmation token are required" });
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      const { error } = await supabaseAdmin
+        .from("email_verifications")
+        .upsert(
+          {
+            email: String(email).toLowerCase(),
+            token: confirmationToken,
+            expires_at: expiresAt,
+            verified_at: null,
+          },
+          { onConflict: "email" },
+        );
+
+      if (error) {
+        return res.status(500).json({ message: error.message });
+      }
+
+      const resendKey = process.env.RESEND_API_KEY;
+      const resendFrom = process.env.RESEND_FROM;
+      if (!resendKey || !resendFrom) {
+        return res
+          .status(500)
+          .json({ message: "Email delivery is not configured (RESEND_API_KEY/RESEND_FROM)." });
+      }
+
+      const baseUrl = process.env.PUBLIC_BASE_URL || process.env.EXPO_PUBLIC_API_BASE_URL || "";
+      const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${confirmationToken}`;
+
+      const resendResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: resendFrom,
+          to: [String(email).toLowerCase()],
+          subject: "Conferma il tuo account - Tenant App",
+          html: `
+            <p>Ciao!</p>
+            <p>Per completare la registrazione, conferma la tua email cliccando il link qui sotto:</p>
+            <p><a href="${verificationUrl}">Conferma email</a></p>
+            <p>Se il link non funziona, copia questo URL nel browser:</p>
+            <p>${verificationUrl}</p>
+            <p>Il link scadrà tra 24 ore.</p>
+          `,
+        }),
+      });
+
+      if (!resendResponse.ok) {
+        const errorText = await resendResponse.text();
+        return res.status(502).json({ message: errorText || "Failed to send email" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to create verification" });
+    }
+  });
+
+  app.get("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const token = req.query.token as string | undefined;
+      if (!token) {
+        return res.status(400).send("Missing token");
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+      const { data, error } = await supabaseAdmin
+        .from("email_verifications")
+        .select("token, expires_at, verified_at")
+        .eq("token", token)
+        .single();
+
+      if (error || !data) {
+        return res.status(404).send("Invalid token");
+      }
+
+      if (data.verified_at) {
+        return res.status(200).send("Email already verified. You can return to the app.");
+      }
+
+      if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) {
+        return res.status(410).send("Verification link expired.");
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("email_verifications")
+        .update({ verified_at: new Date().toISOString() })
+        .eq("token", token);
+
+      if (updateError) {
+        return res.status(500).send("Failed to verify email");
+      }
+
+      res.status(200).send("Email verified. You can return to the app.");
+    } catch (error: any) {
+      res.status(500).send(error.message || "Verification failed");
+    }
+  });
+
+  app.get("/api/auth/verification-status", async (req: Request, res: Response) => {
+    try {
+      const token = req.query.token as string | undefined;
+      if (!token) {
+        return res.status(400).json({ message: "Missing token" });
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+      const { data, error } = await supabaseAdmin
+        .from("email_verifications")
+        .select("verified_at, expires_at")
+        .eq("token", token)
+        .single();
+
+      if (error || !data) {
+        return res.status(404).json({ message: "Invalid token" });
+      }
+
+      if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) {
+        return res.status(410).json({ message: "Verification link expired" });
+      }
+
+      res.json({ verified: !!data.verified_at });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Verification check failed" });
     }
   });
 
@@ -90,6 +260,186 @@ export async function registerRoutes(
       res.json(pendingUsers);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/verification/submit", async (req: Request, res: Response) => {
+    try {
+      const userId = await resolveUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const {
+        documentType,
+        documentFrontPath,
+        documentBackPath,
+        selfiePath,
+        documentNumber,
+        expiryDate,
+      } = req.body as any;
+
+      if (!documentType || !documentFrontPath || !selfiePath) {
+        return res.status(400).json({ message: "Missing required verification fields" });
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+
+      const { data, error } = await supabaseAdmin
+        .from("verification_documents")
+        .insert({
+          user_id: userId,
+          document_type: documentType,
+          document_front_url: documentFrontPath,
+          document_back_url: documentBackPath,
+          selfie_url: selfiePath,
+          document_number: documentNumber || null,
+          expiry_date: expiryDate || null,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        return res.status(500).json({ message: error.message });
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("utenti")
+        .update({
+          verification_pending: true,
+          verification_submitted_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (updateError) {
+        console.warn("Failed to update utenti verification status:", updateError.message);
+      }
+
+      res.json({ success: true, documentId: data.id });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Verification submission failed" });
+    }
+  });
+
+  app.get("/api/verification/status", async (req: Request, res: Response) => {
+    try {
+      const userId = await resolveUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+      const { data, error } = await supabaseAdmin
+        .from("verification_documents")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        return res.status(404).json({ message: error.message });
+      }
+
+      const bucket = "verification-documents";
+      const createSignedUrl = async (path?: string | null) => {
+        if (!path) return null;
+        const signed = await supabaseAdmin.storage
+          .from(bucket)
+          .createSignedUrl(path, 60 * 10);
+        if (signed.error) {
+          throw new Error(signed.error.message);
+        }
+        return signed.data?.signedUrl || null;
+      };
+
+      const [documentFrontUrl, documentBackUrl, selfieUrl] = await Promise.all([
+        createSignedUrl(data.document_front_url),
+        createSignedUrl(data.document_back_url),
+        createSignedUrl(data.selfie_url),
+      ]);
+
+      res.json({
+        ...data,
+        document_front_url: documentFrontUrl,
+        document_back_url: documentBackUrl,
+        selfie_url: selfieUrl,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to fetch verification status" });
+    }
+  });
+
+  app.post("/api/verification/prepare", async (req: Request, res: Response) => {
+    try {
+      const userId = await resolveUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const {
+        documentFront,
+        documentBack,
+        selfie,
+      } = req.body as any;
+
+      if (!documentFront?.fileName || !documentFront?.contentType || !selfie?.fileName || !selfie?.contentType) {
+        return res.status(400).json({ message: "Missing required file metadata" });
+      }
+
+      const supabaseAdmin = requireSupabaseAdmin();
+      const bucket = "verification-documents";
+      const expiresIn = 60 * 5;
+
+      const buildPath = (fileName: string, folder: string) => {
+        const extension = fileName.includes(".") ? fileName.split(".").pop() : "jpg";
+        const safeBase = fileName
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^a-zA-Z0-9_-]/g, "_");
+        return `${userId}/${folder}/${Date.now()}-${safeBase}-${randomUUID()}.${extension}`;
+      };
+
+      const documentFrontPath = buildPath(documentFront.fileName, "documents");
+      const selfiePath = buildPath(selfie.fileName, "selfies");
+      const documentBackPath = documentBack?.fileName ? buildPath(documentBack.fileName, "documents") : null;
+
+      const [frontSigned, selfieSigned, backSigned] = await Promise.all([
+        supabaseAdmin.storage.from(bucket).createSignedUploadUrl(documentFrontPath, expiresIn),
+        supabaseAdmin.storage.from(bucket).createSignedUploadUrl(selfiePath, expiresIn),
+        documentBackPath
+          ? supabaseAdmin.storage.from(bucket).createSignedUploadUrl(documentBackPath, expiresIn)
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      if (frontSigned.error) {
+        return res.status(500).json({ message: frontSigned.error.message });
+      }
+      if (selfieSigned.error) {
+        return res.status(500).json({ message: selfieSigned.error.message });
+      }
+      if (backSigned.error) {
+        return res.status(500).json({ message: backSigned.error.message });
+      }
+      if (!frontSigned.data?.signedUrl || !selfieSigned.data?.signedUrl) {
+        return res.status(500).json({ message: "Signed upload URL unavailable" });
+      }
+
+      res.json({
+        documentFront: {
+          path: documentFrontPath,
+          signedUrl: frontSigned.data?.signedUrl || null,
+        },
+        documentBack: documentBackPath
+          ? { path: documentBackPath, signedUrl: backSigned.data?.signedUrl || null }
+          : null,
+        selfie: {
+          path: selfiePath,
+          signedUrl: selfieSigned.data?.signedUrl || null,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to prepare upload" });
     }
   });
 

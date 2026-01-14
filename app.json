@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyTenant",
-    "slug": "mytenant",
+    "name": "Tenant",
+    "slug": "tenant",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -16,16 +16,17 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.mytenant.tenantapp",
+      "bundleIdentifier": "com.geraxi.tenantpro",
       "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Questa app richiede l'accesso alla fotocamera per scansionare documenti e caricare foto profilo.",
-        "NSFaceIDUsageDescription": "Face ID viene utilizzato per l'accesso sicuro.",
-        "NSPhotoLibraryUsageDescription": "La libreria foto è necessaria per caricare immagini dell'immobile.",
-        "NSPhotoLibraryAddUsageDescription": "L'app ha bisogno di salvare le foto che carichi nel tuo profilo.",
-        "NSUserTrackingUsageDescription": "I dati vengono utilizzati per migliorare l'esperienza utente.",
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes for property check-ins and to photograph maintenance issues",
+        "NSFaceIDUsageDescription": "Face ID is used for secure access.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photos to upload images of maintenance issues, documents, and receipts",
+        "NSPhotoLibraryAddUsageDescription": "This app saves photos to your library for your records",
+        "NSUserTrackingUsageDescription": "Data is used to improve the user experience.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby properties and verify check-in locations",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleLocalizations": [
@@ -56,7 +57,8 @@
       "usesIcloudStorage": true
     },
     "android": {
-      "package": "com.mytenant.tenantapp",
+      "package": "com.geraxi.tenantpro",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -81,7 +83,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Questa app richiede l'accesso alla fotocamera per scansionare bollette e codici QR.",
+          "cameraPermission": "This app uses the camera to scan QR codes for property check-ins and to photograph maintenance issues",
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
           "recordAudioAndroid": true
         }
@@ -95,7 +97,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "This app accesses your photos to upload images of maintenance issues, documents, and receipts"
         }
       ],
       [
@@ -132,10 +134,13 @@
       "useEmbeddedUpdate": true
     },
     "extra": {
+      "privacyPolicyUrl": "https://geraxi.github.io/tenant-mvp/privacy.html",
+      "termsOfServiceUrl": "https://geraxi.github.io/tenant-mvp/terms.html",
       "eas": {
         "projectId": "ec1dfa50-a8be-4a82-a7b0-b344e5a67aa4"
       }
     },
+    "privacy": "public",
     "owner": "ugeraci97"
   }
 }

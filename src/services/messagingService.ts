@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../client/supabase';
 
 export interface Message {
   id: string;

@@ -10,6 +10,7 @@ export const ENV_CONFIG = {
   EXPO_PUBLIC_SUPABASE_URL: 'https://YOUR-PROJECT.supabase.co',
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'YOUR-ANON-KEY',
   EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_YOUR_STRIPE_PUBLISHABLE_KEY',
+  EXPO_PUBLIC_API_BASE_URL: 'https://your-api.example.com',
   
   // Server-side Environment Variables (for Supabase Edge Functions)
   STRIPE_SECRET: 'sk_test_YOUR_STRIPE_SECRET_KEY',
@@ -22,7 +23,7 @@ export const ENV_CONFIG = {
 //    EXPO_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
 //    EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR-ANON-KEY
 //    EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_STRIPE_PUBLISHABLE_KEY
+//    EXPO_PUBLIC_API_BASE_URL=https://your-api.example.com
 // 3. For Supabase Edge Functions, set these in your Supabase dashboard:
 //    STRIPE_SECRET=sk_test_YOUR_STRIPE_SECRET_KEY
 //    STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET
-

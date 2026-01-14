@@ -105,7 +105,17 @@ export const refreshSession = async () => {
   }
 };
 
-export const savePendingUser = async (userData: { email: string; password: string; confirmationToken: string }) => {
+export type PendingUser = {
+  id: string;
+  email: string;
+  password: string;
+  confirmationToken: string;
+  nome?: string;
+  ruolo?: 'tenant' | 'landlord';
+  emailVerified?: boolean;
+};
+
+export const savePendingUser = async (userData: PendingUser) => {
   try {
     await AsyncStorage.setItem(PENDING_USER_KEY, JSON.stringify(userData));
   } catch (error) {
@@ -115,7 +125,7 @@ export const savePendingUser = async (userData: { email: string; password: strin
   }
 };
 
-export const getPendingUser = async (): Promise<{ email: string; password: string; confirmationToken: string } | null> => {
+export const getPendingUser = async (): Promise<PendingUser | null> => {
   try {
     const pendingUserData = await AsyncStorage.getItem(PENDING_USER_KEY);
     if (pendingUserData) {
@@ -125,6 +135,21 @@ export const getPendingUser = async (): Promise<{ email: string; password: strin
   } catch (error) {
     if (__DEV__) {
       console.error('Error getting pending user:', error);
+    }
+    return null;
+  }
+};
+
+export const updatePendingUser = async (updates: Partial<PendingUser>) => {
+  try {
+    const existing = await getPendingUser();
+    if (!existing) return null;
+    const updated = { ...existing, ...updates };
+    await AsyncStorage.setItem(PENDING_USER_KEY, JSON.stringify(updated));
+    return updated;
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error updating pending user:', error);
     }
     return null;
   }
@@ -159,6 +184,16 @@ export const isEmailVerified = async (email: string): Promise<boolean> => {
       console.error('Error checking email verification:', error);
     }
     return false;
+  }
+};
+
+export const clearEmailVerification = async () => {
+  try {
+    await AsyncStorage.removeItem(EMAIL_VERIFICATION_KEY);
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error clearing email verification:', error);
+    }
   }
 };
 

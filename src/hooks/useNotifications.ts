@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../utils/src/supabaseClient';
+import { supabase } from '../../client/supabase';
 import { Notifica } from '../types';
 import * as Notifications from 'expo-notifications';
 

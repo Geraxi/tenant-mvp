@@ -4,6 +4,8 @@ import { Utente } from '../src/types';
 import PersonalDetailsScreen from './PersonalDetailsScreen';
 import CreateListingScreen from './CreateListingScreen';
 import LandlordPreferencesScreen from './LandlordPreferencesScreen';
+import ListingReviewScreen from './ListingReviewScreen';
+import ListingSuccessScreen from './ListingSuccessScreen';
 
 interface LandlordOnboardingFlowScreenProps {
   user: Utente;
@@ -15,7 +17,7 @@ interface LandlordOnboardingFlowScreenProps {
   onCancel: () => void;
 }
 
-type Step = 'personal' | 'property' | 'preferences';
+type Step = 'personal' | 'property' | 'review' | 'success' | 'preferences';
 
 export default function LandlordOnboardingFlowScreen({
   user,
@@ -45,8 +47,30 @@ export default function LandlordOnboardingFlowScreen({
         onBack={() => setStep('personal')}
         onSave={(property) => {
           setPropertyDraft(property);
-          setStep('preferences');
+          setStep('review');
         }}
+      />
+    );
+  }
+
+  if (step === 'review') {
+    return (
+      <ListingReviewScreen
+        property={propertyDraft || {}}
+        onBack={() => setStep('property')}
+        onEdit={() => setStep('property')}
+        onPublish={() => setStep('success')}
+      />
+    );
+  }
+
+  if (step === 'success') {
+    return (
+      <ListingSuccessScreen
+        onExploreMatches={() => setStep('preferences')}
+        onViewListing={() => setStep('review')}
+        onGoToTenantPreferences={() => setStep('preferences')}
+        onGoToDashboard={() => setStep('preferences')}
       />
     );
   }

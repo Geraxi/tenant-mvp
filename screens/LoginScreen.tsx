@@ -28,7 +28,7 @@ const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
-  onSignupSuccess?: () => void;
+  onSignupSuccess?: (nextStep?: 'verify' | 'onboarding') => void;
   onNavigateToSignup: () => void;
 }
 
@@ -151,7 +151,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
             if (result.isNewUser) {
               logger.debug('New Apple user - triggering onboarding');
               if (onSignupSuccess) {
-                onSignupSuccess();
+                onSignupSuccess('onboarding');
               } else {
                 onLoginSuccess();
               }
@@ -210,11 +210,15 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
       if (result.success) {
         // For new signups, go directly to onboarding
         if (onSignupSuccess) {
-          onSignupSuccess();
+          onSignupSuccess('verify');
         } else {
           onLoginSuccess();
         }
       } else {
+        if (result.pending && onSignupSuccess) {
+          onSignupSuccess('verify');
+          return;
+        }
         Alert.alert('Errore', result.error || 'Errore durante la registrazione');
       }
     } catch (error) {

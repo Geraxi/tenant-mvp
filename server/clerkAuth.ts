@@ -13,10 +13,7 @@ if (!clerkSecretKey) {
 }
 
 // Initialize Clerk client
-let clerk: ReturnType<typeof clerkClient> | null = null;
-if (clerkSecretKey) {
-  clerk = clerkClient(clerkSecretKey);
-}
+const clerk = clerkSecretKey ? clerkClient : null;
 
 // Rate limiters for auth endpoints
 const authLimiter = rateLimit({
@@ -236,4 +233,3 @@ export function isAuthenticated(req: any, res: any, next: any) {
   
   next();
 }
-

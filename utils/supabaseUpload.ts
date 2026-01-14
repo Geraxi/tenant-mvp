@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { supabase } from './src/supabaseClient';
+import { supabase } from '../client/supabase';
 import { Alert } from 'react-native';
 
 export type UploadType = 'avatar' | 'id_document' | 'selfie' | 'property_image' | 'contract';

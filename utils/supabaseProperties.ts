@@ -1,4 +1,4 @@
-import { supabase } from './src/supabaseClient';
+import { supabase } from '../client/supabase';
 import { uploadImageFromGallery, uploadImageFromCamera, UploadResult } from './supabaseUpload';
 
 // Network connectivity check

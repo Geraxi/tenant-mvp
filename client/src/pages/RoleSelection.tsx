@@ -6,7 +6,7 @@ import { Home, Users, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../../supabase";
 import { onboardingStorageWeb } from "@/lib/onboarding/storage.web";
 
 export default function RoleSelection() {

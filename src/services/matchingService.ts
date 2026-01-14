@@ -1,4 +1,4 @@
-import { supabase } from '../../utils/src/supabaseClient';
+import { supabase } from '../../client/supabase';
 import { Utente } from '../types';
 import { Property } from '../../types';
 

@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
-import { getPendingUser, clearPendingUser, setEmailVerified } from '../utils/userStorage';
+import { getPendingUser, updatePendingUser, setEmailVerified } from '../utils/userStorage';
 import { sendConfirmationEmail } from '../utils/emailService';
 
 interface EmailVerificationScreenProps {
@@ -22,7 +22,12 @@ export default function EmailVerificationScreen({
   onVerificationComplete,
   onBack,
 }: EmailVerificationScreenProps) {
-  const [pendingUser, setPendingUser] = useState<{ email: string; password: string; confirmationToken: string } | null>(null);
+  const [pendingUser, setPendingUser] = useState<{
+    email: string;
+    password: string;
+    confirmationToken: string;
+    nome?: string;
+  } | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -67,15 +72,26 @@ export default function EmailVerificationScreen({
 
     setIsVerifying(true);
     try {
-      // Simulate email verification check
-      // In a real app, you would check with your backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mark email as verified
+      const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || '';
+      const response = await fetch(
+        `${apiBaseUrl}/api/auth/verification-status?token=${encodeURIComponent(pendingUser.confirmationToken)}`,
+      );
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Verifica non riuscita');
+      }
+
+      const data = await response.json();
+      if (!data?.verified) {
+        Alert.alert(
+          'Email non verificata',
+          'Non abbiamo ancora ricevuto la conferma. Controlla la tua email e riprova.',
+        );
+        return;
+      }
+
       await setEmailVerified(pendingUser.email);
-      
-      // Clear pending user data
-      await clearPendingUser();
+      await updatePendingUser({ emailVerified: true });
       
       Alert.alert(
         'Email Verificata!',
