@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -19,6 +19,8 @@ interface ListingAnalyzerWebViewProps {
   onClose: () => void;
   onDataExtracted: (data: PropertyData) => void;
   onError: (error: string) => void;
+  autoExtract?: boolean;
+  onAutoExtracted?: () => void;
 }
 
 export default function ListingAnalyzerWebView({
@@ -27,12 +29,27 @@ export default function ListingAnalyzerWebView({
   onClose,
   onDataExtracted,
   onError,
+  autoExtract = false,
+  onAutoExtracted,
 }: ListingAnalyzerWebViewProps) {
   const webViewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState(url);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const autoExtractedRef = useRef(false);
+
+  useEffect(() => {
+    if (!visible) {
+      autoExtractedRef.current = false;
+      return;
+    }
+    if (autoExtract && !loading && !autoExtractedRef.current) {
+      autoExtractedRef.current = true;
+      extractData();
+      onAutoExtracted?.();
+    }
+  }, [autoExtract, loading, visible, onAutoExtracted]);
 
   const handleLoadStart = () => {
     setLoading(true);

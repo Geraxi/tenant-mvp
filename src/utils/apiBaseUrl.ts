@@ -6,14 +6,6 @@ export function getApiBaseUrl(): string {
   if (envUrl) return envUrl;
 
   if (Platform.OS !== 'web') {
-    const isDevice = Constants.isDevice ?? false;
-    if (!isDevice) {
-      if (Platform.OS === 'android') {
-        return 'http://10.0.2.2:5050';
-      }
-      return 'http://127.0.0.1:5050';
-    }
-
     const manifest = Constants.manifest as { debuggerHost?: string } | undefined;
     const manifest2 = (Constants as { manifest2?: { debuggerHost?: string } }).manifest2;
     const hostUri =
@@ -23,7 +15,11 @@ export function getApiBaseUrl(): string {
       return `http://${host}:5050`;
     }
 
-    throw new Error('EXPO_PUBLIC_API_BASE_URL is required on physical devices.');
+    const isDevice = Constants.isDevice ?? false;
+    if (!isDevice && Platform.OS === 'android') {
+      return 'http://10.0.2.2:5050';
+    }
+    return 'http://127.0.0.1:5050';
   }
 
   return '';

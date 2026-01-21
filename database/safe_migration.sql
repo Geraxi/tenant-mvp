@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS messages (
 -- ============================================
 CREATE TABLE IF NOT EXISTS verification_documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL,
   document_type TEXT NOT NULL CHECK (document_type IN ('carta-identita', 'passaporto', 'patente')),
   document_front_url TEXT NOT NULL,
   document_back_url TEXT,
@@ -296,4 +296,3 @@ CREATE POLICY "Users can update their own pending documents"
 -- ============================================
 -- This script is idempotent - you can run it multiple times safely
 -- It will only create what doesn't exist and won't modify existing data
-

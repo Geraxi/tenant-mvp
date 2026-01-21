@@ -106,16 +106,6 @@ export default function MessagesScreen({ onNavigateBack, targetUserId, targetUse
       
       console.log('Got conversation ID:', conversationId);
       
-      // Check if it's a temporary ID (database not set up)
-      if (conversationId.startsWith('temp_')) {
-        console.log('Database not set up - got temp ID');
-        Alert.alert(
-          'Database non configurato',
-          'Le tabelle del database non sono ancora state create. Esegui lo script SQL fornito in Supabase per abilitare la messaggistica.\n\nDettagli: La tabella "conversations" non esiste nel database.'
-        );
-        return;
-      }
-      
       setSelectedConversationId(conversationId);
       setSelectedConversationOtherUserId(otherUserId);
       
@@ -209,14 +199,7 @@ export default function MessagesScreen({ onNavigateBack, targetUserId, targetUse
       return;
     }
 
-    // Check if it's a temporary ID (database not set up)
-    if (selectedConversationId.startsWith('temp_')) {
-      Alert.alert(
-        'Database non configurato',
-        'Le tabelle del database non sono ancora state create. Esegui lo script SQL fornito in Supabase per abilitare la messaggistica.'
-      );
-      return;
-    }
+    const isTempConversation = selectedConversationId.startsWith('temp_');
 
     // Get receiver ID from conversation or from state
     let receiverId = selectedConversationOtherUserId;
@@ -247,6 +230,22 @@ export default function MessagesScreen({ onNavigateBack, targetUserId, targetUse
       receiverId,
       messageLength: newMessage.trim().length
     });
+
+    if (isTempConversation) {
+      const tempMessage = {
+        id: `temp_msg_${Date.now()}`,
+        conversation_id: selectedConversationId,
+        sender_id: user.id,
+        receiver_id: receiverId,
+        content: newMessage.trim(),
+        is_read: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, tempMessage]);
+      setNewMessage('');
+      return;
+    }
 
     try {
       const sentMessage = await MessagingService.sendMessage(

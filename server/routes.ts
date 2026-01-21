@@ -16,7 +16,7 @@ import {
 import { stripeService } from "./stripeService";
 import { getStripePublishableKey } from "./stripeClient";
 import { pushService } from "./pushService";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { clerkClient } from "@clerk/express";
 
 const clerkSecretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
@@ -46,6 +46,25 @@ async function resolveUserId(req: Request): Promise<string | null> {
   }
 
   return null;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
+}
+
+function coerceUserIdToUuid(userId: string): string {
+  if (isUuid(userId)) {
+    return userId;
+  }
+
+  const hash = createHash("sha256").update(userId).digest("hex");
+  const base = hash.slice(0, 32);
+  return `${base.slice(0, 8)}-${base.slice(8, 12)}-4${base.slice(
+    13,
+    16
+  )}-a${base.slice(17, 20)}-${base.slice(20, 32)}`;
 }
 
 export async function registerRoutes(
@@ -94,15 +113,43 @@ export async function registerRoutes(
 
       const resendKey = process.env.RESEND_API_KEY;
       const resendFrom = process.env.RESEND_FROM;
+      const resendTestRecipient = process.env.RESEND_TEST_RECIPIENT;
       if (!resendKey || !resendFrom) {
         return res
           .status(500)
           .json({ message: "Email delivery is not configured (RESEND_API_KEY/RESEND_FROM)." });
       }
 
-      const baseUrl = process.env.PUBLIC_BASE_URL || process.env.EXPO_PUBLIC_API_BASE_URL || "";
-      const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${confirmationToken}`;
+      const normalizeBaseUrl = (value?: string) => {
+        if (!value) return '';
+        if (value.startsWith('http://') || value.startsWith('https://')) {
+          return value;
+        }
+        return `https://${value}`;
+      };
 
+      const publicBaseUrl = normalizeBaseUrl(process.env.PUBLIC_BASE_URL);
+      const localBaseUrl = normalizeBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
+      const fallbackBaseUrl = `${req.protocol}://${req.get("host")}`;
+      const primaryBaseUrl = publicBaseUrl || localBaseUrl || fallbackBaseUrl;
+
+      const verificationUrl = `${primaryBaseUrl}/api/auth/verify-email?token=${confirmationToken}`;
+      const fallbackVerificationUrl =
+        localBaseUrl && localBaseUrl !== primaryBaseUrl
+          ? `${localBaseUrl}/api/auth/verify-email?token=${confirmationToken}`
+          : null;
+      console.log("[email] verificationUrl:", verificationUrl);
+
+      const recipient = resendTestRecipient || String(email).toLowerCase();
+      const intendedRecipient = resendTestRecipient ? String(email).toLowerCase() : null;
+      if (resendTestRecipient) {
+        console.warn(
+          "[email] Using RESEND_TEST_RECIPIENT override:",
+          resendTestRecipient,
+          "for",
+          intendedRecipient
+        );
+      }
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -111,14 +158,25 @@ export async function registerRoutes(
         },
         body: JSON.stringify({
           from: resendFrom,
-          to: [String(email).toLowerCase()],
+          to: [recipient],
           subject: "Conferma il tuo account - Tenant App",
+          text: `Conferma la tua email:\n${verificationUrl}\n\nSe il link non funziona, prova questo link:\n${fallbackVerificationUrl || verificationUrl}\n\nSe il link non funziona, copia e incolla questo URL nel browser.\n<${verificationUrl}>`,
           html: `
             <p>Ciao!</p>
             <p>Per completare la registrazione, conferma la tua email cliccando il link qui sotto:</p>
-            <p><a href="${verificationUrl}">Conferma email</a></p>
+            <p><a href="${verificationUrl}" target="_blank" rel="noopener noreferrer">${verificationUrl}</a></p>
+            ${
+              fallbackVerificationUrl
+                ? `<p><a href="${fallbackVerificationUrl}" target="_blank" rel="noopener noreferrer">${fallbackVerificationUrl}</a></p>`
+                : ""
+            }
             <p>Se il link non funziona, copia questo URL nel browser:</p>
             <p>${verificationUrl}</p>
+            ${
+              intendedRecipient
+                ? `<p><strong>Nota dev:</strong> Email originale: ${intendedRecipient}</p>`
+                : ""
+            }
             <p>Il link scadrà tra 24 ore.</p>
           `,
         }),
@@ -139,7 +197,9 @@ export async function registerRoutes(
     try {
       const token = req.query.token as string | undefined;
       if (!token) {
-        return res.status(400).send("Missing token");
+        return res.status(400).send(
+          "<!doctype html><html><body><h2>Token mancante</h2><p>Il link di verifica non è valido.</p></body></html>"
+        );
       }
 
       const supabaseAdmin = requireSupabaseAdmin();
@@ -150,15 +210,21 @@ export async function registerRoutes(
         .single();
 
       if (error || !data) {
-        return res.status(404).send("Invalid token");
+        return res.status(404).send(
+          "<!doctype html><html><body><h2>Token non valido</h2><p>Il link di verifica non è valido.</p></body></html>"
+        );
       }
 
       if (data.verified_at) {
-        return res.status(200).send("Email already verified. You can return to the app.");
+        return res.status(200).send(
+          "<!doctype html><html><body><h2>Email già verificata</h2><p>Puoi tornare all'app.</p></body></html>"
+        );
       }
 
       if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) {
-        return res.status(410).send("Verification link expired.");
+        return res.status(410).send(
+          "<!doctype html><html><body><h2>Link scaduto</h2><p>Richiedi una nuova email di verifica.</p></body></html>"
+        );
       }
 
       const { error: updateError } = await supabaseAdmin
@@ -167,12 +233,18 @@ export async function registerRoutes(
         .eq("token", token);
 
       if (updateError) {
-        return res.status(500).send("Failed to verify email");
+        return res.status(500).send(
+          "<!doctype html><html><body><h2>Errore</h2><p>Impossibile verificare l'email.</p></body></html>"
+        );
       }
 
-      res.status(200).send("Email verified. You can return to the app.");
+      res.status(200).send(
+        "<!doctype html><html><body><h2>Email verificata</h2><p>Puoi tornare all'app e continuare.</p></body></html>"
+      );
     } catch (error: any) {
-      res.status(500).send(error.message || "Verification failed");
+      res.status(500).send(
+        "<!doctype html><html><body><h2>Errore</h2><p>Verifica non riuscita.</p></body></html>"
+      );
     }
   });
 
@@ -269,6 +341,7 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
+      const verificationUserId = coerceUserIdToUuid(userId);
 
       const {
         documentType,
@@ -288,7 +361,7 @@ export async function registerRoutes(
       const { data, error } = await supabaseAdmin
         .from("verification_documents")
         .insert({
-          user_id: userId,
+          user_id: verificationUserId,
           document_type: documentType,
           document_front_url: documentFrontPath,
           document_back_url: documentBackPath,
@@ -310,7 +383,7 @@ export async function registerRoutes(
           verification_pending: true,
           verification_submitted_at: new Date().toISOString(),
         })
-        .eq("id", userId);
+        .eq("id", verificationUserId);
 
       if (updateError) {
         console.warn("Failed to update utenti verification status:", updateError.message);
@@ -328,12 +401,13 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
+      const verificationUserId = coerceUserIdToUuid(userId);
 
       const supabaseAdmin = requireSupabaseAdmin();
       const { data, error } = await supabaseAdmin
         .from("verification_documents")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", verificationUserId)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();

@@ -51,7 +51,10 @@ export default function LoginScreen({ onLoginSuccess, onSignupSuccess, onNavigat
   
   const { signIn, signUp, checkExistingUsers, signInWithApple } = useSupabaseAuth();
   const { isLoaded } = useAuth();
-  const oauthRedirectUrl = AuthSession.makeRedirectUri({ path: 'sso-callback' });
+  const oauthRedirectUrl =
+    process.env.EXPO_PUBLIC_CLERK_REDIRECT_URL ||
+    AuthSession.makeRedirectUri({ path: 'sso-callback' });
+  console.log('[LoginScreen] OAuth redirect URL:', oauthRedirectUrl);
   const { startSSOFlow } = useSSO();
 
   // Configure Google Sign In - temporarily disabled

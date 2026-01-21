@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { Property } from '../types';
 import { t } from '../utils/translations';
 import ListingAnalyzerWebView from '../components/ListingAnalyzerWebView';
@@ -85,6 +86,7 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
   const [analyzerUrl, setAnalyzerUrl] = useState('');
   const [showAnalyzer, setShowAnalyzer] = useState(false);
   const [analyzerLoading, setAnalyzerLoading] = useState(false);
+  const [autoExtract, setAutoExtract] = useState(false);
   const analyzer = ListingAnalyzer.getInstance();
 
   const minPhotos = 5;
@@ -117,25 +119,53 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
       [
         {
           text: t('takePhoto'),
-          onPress: () => {
-            const newPhoto = `https://images.unsplash.com/photo-${Date.now()}?w=800`;
-            setPhotos([...photos, newPhoto]);
-            Alert.alert(t('success'), t('uploadSuccess'));
+          onPress: async () => {
+            try {
+              const { status } = await ImagePicker.requestCameraPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert(t('error'), 'Permesso fotocamera negato');
+                return;
+              }
+
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+              });
+
+              if (!result.canceled && result.assets?.length) {
+                setPhotos(prev => [...prev, result.assets[0].uri]);
+                Alert.alert(t('success'), t('uploadSuccess'));
+              }
+            } catch (error) {
+              console.error('Camera upload error:', error);
+              Alert.alert(t('error'), t('uploadFailed'));
+            }
           },
         },
         {
           text: t('chooseFromLibrary'),
-          onPress: () => {
-            const propertyPhotos = [
-              'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-              'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-              'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-              'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=800',
-              'https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800',
-            ];
-            const randomPhoto = propertyPhotos[Math.floor(Math.random() * propertyPhotos.length)];
-            setPhotos([...photos, randomPhoto]);
-            Alert.alert(t('success'), t('uploadSuccess'));
+          onPress: async () => {
+            try {
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert(t('error'), 'Permesso galleria negato');
+                return;
+              }
+
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                allowsMultipleSelection: true,
+              });
+
+              if (!result.canceled && result.assets?.length) {
+                setPhotos(prev => [...prev, ...result.assets.map(asset => asset.uri)]);
+                Alert.alert(t('success'), t('uploadSuccess'));
+              }
+            } catch (error) {
+              console.error('Gallery upload error:', error);
+              Alert.alert(t('error'), t('uploadFailed'));
+            }
           },
         },
         { text: t('cancel'), style: 'cancel' },
@@ -196,60 +226,8 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
     }
 
     setAnalyzerLoading(true);
-    try {
-      const propertyData = await analyzer.analyzeListing(analyzerUrl);
-      if (propertyData) {
-        // Fill in the form with extracted data
-        setTitle(propertyData.title);
-        setDescription(propertyData.description);
-        setLocation(propertyData.location);
-        setRent(propertyData.price.toString());
-        setBedrooms(propertyData.bedrooms.toString());
-        setBathrooms(propertyData.bathrooms.toString());
-        setSquareMeters(propertyData.squareMeters.toString());
-        
-        // Add extracted images
-        if (propertyData.images.length > 0) {
-          setPhotos(propertyData.images);
-        }
-        
-        // Map features to amenities
-        const extractedAmenities: string[] = [];
-        propertyData.features.forEach(feature => {
-          const lowerFeature = feature.toLowerCase();
-          if (lowerFeature.includes('wifi') || lowerFeature.includes('internet')) {
-            extractedAmenities.push('WiFi');
-          }
-          if (lowerFeature.includes('parcheggio') || lowerFeature.includes('garage')) {
-            extractedAmenities.push('Parcheggio');
-          }
-          if (lowerFeature.includes('ascensore')) {
-            extractedAmenities.push('Ascensore');
-          }
-          if (lowerFeature.includes('aria condizionata') || lowerFeature.includes('climatizzato')) {
-            extractedAmenities.push('Aria Condizionata');
-          }
-          if (lowerFeature.includes('balcone') || lowerFeature.includes('terrazzo')) {
-            setBalconyOrTerrace(true);
-          }
-          if (lowerFeature.includes('arredato') || lowerFeature.includes('mobilizzato')) {
-            setFurnished(true);
-          }
-        });
-        setSelectedAmenities(extractedAmenities);
-        
-        Alert.alert(
-          'Successo!',
-          'Dati del listing estratti con successo. Verifica e modifica se necessario.',
-          [{ text: 'OK', onPress: () => setAnalyzerUrl('') }]
-        );
-      }
-    } catch (error) {
-      console.error('Error analyzing listing:', error);
-      Alert.alert('Errore', 'Impossibile analizzare il listing. Riprova.');
-    } finally {
-      setAnalyzerLoading(false);
-    }
+    setAutoExtract(true);
+    setShowAnalyzer(true);
   };
 
   const handleOpenAnalyzer = () => {
@@ -261,6 +239,8 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
   };
 
   const handleDataExtracted = (data: PropertyData) => {
+    setAnalyzerLoading(false);
+    setAutoExtract(false);
     // Fill in the form with extracted data
     setTitle(data.title);
     setDescription(data.description);
@@ -308,6 +288,8 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
   };
 
   const handleAnalyzerError = (error: string) => {
+    setAnalyzerLoading(false);
+    setAutoExtract(false);
     Alert.alert('Errore', error);
   };
 
@@ -621,9 +603,15 @@ export default function CreateListingScreen({ onBack, onSave }: CreateListingScr
       <ListingAnalyzerWebView
         visible={showAnalyzer}
         url={analyzerUrl}
-        onClose={() => setShowAnalyzer(false)}
+        onClose={() => {
+          setShowAnalyzer(false);
+          setAnalyzerLoading(false);
+          setAutoExtract(false);
+        }}
         onDataExtracted={handleDataExtracted}
         onError={handleAnalyzerError}
+        autoExtract={autoExtract}
+        onAutoExtracted={() => setAnalyzerLoading(true)}
       />
     </SafeAreaView>
   );

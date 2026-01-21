@@ -52,50 +52,71 @@ export default function OnboardingConfirmationScreen({
   const renderPreferencesSummary = () => {
     if (user.ruolo === 'tenant') {
       const prefs = onboardingData.preferences;
+      const propertyType = Array.isArray(prefs?.propertyType)
+        ? prefs.propertyType.join(', ')
+        : 'Non specificato';
+      const bedrooms = Array.isArray(prefs?.bedrooms)
+        ? prefs.bedrooms.join(', ')
+        : 'Non specificato';
+      const location = Array.isArray(prefs?.location)
+        ? prefs.location.join(', ')
+        : 'Non specificato';
+      const budgetMin = prefs?.budget?.min ?? '—';
+      const budgetMax = prefs?.budget?.max ?? '—';
       return (
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>Preferenze Immobili</Text>
           <View style={styles.summaryContent}>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Tipo: </Text>
-              {prefs.propertyType?.join(', ') || 'Non specificato'}
+              {propertyType}
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Budget: </Text>
-              €{prefs.budget?.min} - €{prefs.budget?.max}
+              €{budgetMin} - €{budgetMax}
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Camere: </Text>
-              {prefs.bedrooms?.join(', ') || 'Non specificato'}
+              {bedrooms}
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Zona: </Text>
-              {prefs.location?.join(', ') || 'Non specificato'}
+              {location}
             </Text>
           </View>
         </View>
       );
     } else {
       const prefs = onboardingData.preferences;
+      const employmentStatus = Array.isArray(prefs?.employmentStatus)
+        ? prefs.employmentStatus.join(', ')
+        : 'Non specificato';
+      const gender = Array.isArray(prefs?.gender)
+        ? prefs.gender.join(', ')
+        : 'Non specificato';
+      const incomeMin = prefs?.incomeRange?.min ?? '—';
+      const incomeMax = prefs?.incomeRange?.max ?? '—';
+      const ageMin = prefs?.ageRange?.min ?? '—';
+      const ageMax = prefs?.ageRange?.max ?? '—';
       return (
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>Preferenze Inquilini</Text>
           <View style={styles.summaryContent}>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Occupazione: </Text>
-              {prefs.employmentStatus?.join(', ') || 'Non specificato'}
+              {employmentStatus}
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Reddito: </Text>
-              €{prefs.incomeRange?.min} - €{prefs.incomeRange?.max}
+              €{incomeMin} - €{incomeMax}
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Età: </Text>
-              {prefs.ageRange?.min} - {prefs.ageRange?.max} anni
+              {ageMin} - {ageMax} anni
             </Text>
             <Text style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Sesso: </Text>
-              {prefs.gender?.join(', ') || 'Non specificato'}
+              {gender}
             </Text>
           </View>
         </View>
@@ -138,7 +159,7 @@ export default function OnboardingConfirmationScreen({
   };
 
   const renderIDVerificationSummary = () => {
-    const id = onboardingData.idVerification;
+    const id = onboardingData.idVerification || {};
     return (
       <View style={styles.summarySection}>
         <Text style={styles.summaryTitle}>Verifica Identità</Text>
@@ -363,5 +384,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-

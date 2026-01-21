@@ -46,6 +46,7 @@ import HelpCenterScreen from './screens/HelpCenterScreen';
 import HomeownerOnboardingScreen from './screens/HomeownerOnboardingScreen';
 import PreferencesScreen from './screens/PreferencesScreen';
 import FiltersScreen from './screens/FiltersScreen';
+import IDVerificationScreen from './screens/IDVerificationScreen';
 import BottomNavigation from './components/BottomNavigation';
 import SplashScreen from './components/SplashScreen';
 import RoleSwitchLoadingScreen from './components/RoleSwitchLoadingScreen';
@@ -62,6 +63,7 @@ type Screen =
   | 'emailVerification'
   | 'onboarding'
   | 'homeownerOnboarding'
+  | 'verification'
   | 'discover'
   | 'matches'
   | 'matchDetail'
@@ -349,7 +351,15 @@ function AppContent() {
         // Force refresh to ensure UI updates
         setRefreshKey(prev => prev + 1);
         setAppRefreshKey(prev => prev + 1);
-        
+        setRoleSwitchTarget(newRole);
+
+        const onboardingKey = `${newRole}_onboarding_completed`;
+        const onboardingCompleted = await AsyncStorage.getItem(onboardingKey);
+        if (onboardingCompleted !== 'true') {
+          setCurrentScreen('onboarding');
+          return;
+        }
+
         // Navigate to discover to see the changes
         setCurrentScreen('discover');
         
@@ -448,12 +458,29 @@ function AppContent() {
     }
   };
 
-  const showBottomNav = !!user && !['login', 'onboarding', 'homeownerOnboarding', 'settings', 'editProfile', 'help', 'preferences', 'filters', 'addProperty', 'propertyDetails'].includes(currentScreen);
+  const showBottomNav =
+    !!user &&
+    ![
+      'login',
+      'onboarding',
+      'homeownerOnboarding',
+      'emailVerification',
+      'verification',
+      'settings',
+      'editProfile',
+      'help',
+      'preferences',
+      'filters',
+      'addProperty',
+      'propertyDetails',
+    ].includes(currentScreen);
   
   // Show navbar for main navigation screens (but not during onboarding)
   const shouldShowNavbar =
     showBottomNav ||
-    (forceNavbar && !!user && !['login', 'onboarding', 'homeownerOnboarding'].includes(currentScreen));
+    (forceNavbar &&
+      !!user &&
+      !['login', 'onboarding', 'homeownerOnboarding', 'emailVerification', 'verification'].includes(currentScreen));
   console.log('App - Should show navbar:', shouldShowNavbar);
   
   // Simplified user state monitoring (no more complex refresh logic)
@@ -600,7 +627,7 @@ function AppContent() {
             </View>
           );
         }
-        const onboardingUser = user || (pendingUser as Utente);
+        const onboardingUser = (pendingUser || user) as Utente;
         return roleSwitchTarget ? (
           <RoleSwitchOnboardingScreen
             user={onboardingUser}
@@ -609,7 +636,19 @@ function AppContent() {
               try {
                 // Mark role-specific onboarding as completed
                 await AsyncStorage.setItem(`${roleSwitchTarget}_onboarding_completed`, 'true');
+                const targetRole = roleSwitchTarget;
                 setRoleSwitchTarget(null);
+                if (targetRole === 'landlord') {
+                  Alert.alert(
+                    'Crea il tuo annuncio',
+                    'Vuoi creare subito il tuo primo annuncio?',
+                    [
+                      { text: 'Più tardi', style: 'cancel', onPress: () => setCurrentScreen('discover') },
+                      { text: 'Crea annuncio', onPress: () => setCurrentScreen('addProperty') },
+                    ]
+                  );
+                  return;
+                }
                 setCurrentScreen('discover');
               } catch (error) {
                 console.error('Error saving role switch onboarding completion:', error);
@@ -623,7 +662,7 @@ function AppContent() {
             }}
           />
         ) : (
-          (user?.ruolo === 'landlord' || user?.userType === 'homeowner') ? (
+          (onboardingUser?.ruolo === 'landlord' || onboardingUser?.userType === 'homeowner') ? (
             <LandlordOnboardingFlowScreen
               user={onboardingUser}
               onCancel={() => setCurrentScreen('login')}
@@ -642,7 +681,7 @@ function AppContent() {
                   userType: 'homeowner',
                 };
 
-                if (user) {
+                if (user && !pendingUser) {
                   await updateProfile(profileUpdates);
                   await completeOnboarding('landlord');
                 } else {
@@ -656,7 +695,7 @@ function AppContent() {
                 setCurrentScreen('discover');
               }}
             />
-          ) : (user?.ruolo === 'tenant' || user?.userType === 'tenant') ? (
+          ) : (onboardingUser?.ruolo === 'tenant' || onboardingUser?.userType === 'tenant') ? (
             <TenantOnboardingFlowScreen
               user={onboardingUser}
               onCancel={() => setCurrentScreen('login')}
@@ -670,7 +709,7 @@ function AppContent() {
                   userType: 'tenant',
                 };
 
-                if (user) {
+                if (user && !pendingUser) {
                   await updateProfile(profileUpdates);
                   await completeOnboarding('tenant');
                 } else {
@@ -868,13 +907,27 @@ function AppContent() {
           <ProfiloScreen
             onNavigateToEditProfile={() => setCurrentScreen('editProfile')}
             onNavigateToVerification={() => {
-              // TODO: Implement verification screen
-              Alert.alert('Info', 'Verifica identità in arrivo');
+              setCurrentScreen('verification');
             }}
             onNavigateToSettings={() => setCurrentScreen('settings')}
             onLogout={handleLogout}
             onBack={() => setCurrentScreen('discover')}
             onRoleSwitch={handleRoleSwitch}
+          />
+        );
+      case 'verification':
+        if (!user) {
+          return (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Caricamento...</Text>
+            </View>
+          );
+        }
+        return (
+          <IDVerificationScreen
+            user={user}
+            onBack={() => setCurrentScreen('profilo')}
+            onComplete={() => setCurrentScreen('profilo')}
           />
         );
 

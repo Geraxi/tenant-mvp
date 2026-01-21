@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS email_verifications (
   verified_at TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS email_verifications_email_key ON email_verifications(email);
 CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email);
 
 ALTER TABLE email_verifications ENABLE ROW LEVEL SECURITY;

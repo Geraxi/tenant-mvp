@@ -4,7 +4,7 @@
 -- Verification documents table
 CREATE TABLE IF NOT EXISTS verification_documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL,
   document_type TEXT NOT NULL CHECK (document_type IN ('carta-identita', 'passaporto', 'patente')),
   document_front_url TEXT NOT NULL,
   document_back_url TEXT,
@@ -75,4 +75,3 @@ CREATE TRIGGER trigger_verification_documents_updated_at
   BEFORE UPDATE ON verification_documents
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-

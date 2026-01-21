@@ -30,11 +30,20 @@ export interface Conversation {
 }
 
 export class MessagingService {
+  private static isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+  }
+
   /**
    * Get or create a conversation between two users
    */
   static async getOrCreateConversation(user1Id: string, user2Id: string): Promise<string> {
     try {
+      if (!this.isUuid(user1Id) || !this.isUuid(user2Id)) {
+        return `temp_${Date.now()}`;
+      }
       console.log('=== getOrCreateConversation START ===');
       console.log('User IDs:', user1Id, user2Id);
       
@@ -52,6 +61,9 @@ export class MessagingService {
           details: error.details,
           hint: error.hint
         });
+        if (error.code === '22P02' || error.message?.includes('invalid input syntax for type uuid')) {
+          return `temp_${Date.now()}`;
+        }
         
         // If function doesn't exist, return temp ID
         if (error.code === '42883' || error.message?.includes('does not exist') || error.message?.includes('function') && error.message?.includes('does not exist')) {
@@ -89,6 +101,9 @@ export class MessagingService {
    */
   private static async createConversationManually(user1Id: string, user2Id: string): Promise<string> {
     try {
+      if (!this.isUuid(user1Id) || !this.isUuid(user2Id)) {
+        return `temp_${Date.now()}`;
+      }
       // Ensure consistent ordering
       const smallerId = user1Id < user2Id ? user1Id : user2Id;
       const largerId = user1Id < user2Id ? user2Id : user1Id;
@@ -138,6 +153,9 @@ export class MessagingService {
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
           return `temp_${Date.now()}`;
         }
+        if (error.code === '22P02' || error.message?.includes('invalid input syntax for type uuid')) {
+          return `temp_${Date.now()}`;
+        }
         // For other errors, still return temp ID to prevent app crash
         console.error('Error creating conversation manually:', error);
         return `temp_${Date.now()}`;
@@ -157,6 +175,9 @@ export class MessagingService {
    */
   static async getConversations(userId: string): Promise<Conversation[]> {
     try {
+      if (!this.isUuid(userId)) {
+        return [];
+      }
       // Get conversations where user is participant1 or participant2
       const { data: conversations, error: convError } = await supabase
         .from('conversations')
@@ -167,7 +188,13 @@ export class MessagingService {
 
       if (convError) {
         // If table doesn't exist or network error, return empty array instead of throwing
-        if (convError.code === '42P01' || convError.message?.includes('does not exist') || convError.message?.includes('Network request failed')) {
+        if (
+          convError.code === '42P01' ||
+          convError.code === '22P02' ||
+          convError.message?.includes('does not exist') ||
+          convError.message?.includes('Network request failed') ||
+          convError.message?.includes('invalid input syntax for type uuid')
+        ) {
           // Silently return empty array - don't log network errors
           return [];
         }
@@ -324,6 +351,9 @@ export class MessagingService {
     content: string
   ): Promise<Message | null> {
     try {
+      if (!this.isUuid(senderId) || !this.isUuid(receiverId)) {
+        return null;
+      }
       // Skip if it's a temporary ID (table doesn't exist)
       if (conversationId.startsWith('temp_')) {
         console.log('Cannot send message - conversations table does not exist');
@@ -370,6 +400,9 @@ export class MessagingService {
    */
   static async markMessagesAsRead(conversationId: string, userId: string): Promise<boolean> {
     try {
+      if (!this.isUuid(userId)) {
+        return false;
+      }
       // Skip if it's a temporary ID (table doesn't exist)
       if (conversationId.startsWith('temp_')) {
         return false;
@@ -447,4 +480,3 @@ export class MessagingService {
     }
   }
 }
-

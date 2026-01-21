@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS messages (
 -- ============================================
 CREATE TABLE IF NOT EXISTS verification_documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID NOT NULL,
   document_type TEXT NOT NULL CHECK (document_type IN ('carta-identita', 'passaporto', 'patente')),
   document_front_url TEXT NOT NULL,
   document_back_url TEXT,
@@ -318,4 +318,3 @@ CREATE POLICY "Users can update their own pending documents"
 -- ============================================
 -- Next step: Create the storage bucket in Supabase Dashboard
 -- Then run the storage policies script below
-
